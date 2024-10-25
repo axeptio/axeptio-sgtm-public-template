@@ -32,10 +32,7 @@ By using GTM Server-Side (sGTM) with Axeptio, you can extend and optimize cookie
 ### Step 2: Configure the Tag
 1. Once imported, go to the **Tags** section in your GTM Server-Side.
 2. Create a new tag and select the Axeptio sGTM template.
-3. Configure the tag with the following settings:
-   - **Site ID**: Enter your Axeptio Site ID.
-   - **Cookie Configuration**: Set up the cookies to be managed and extended by Axeptio.
-4. Define the triggers that will fire the Axeptio tag based on user interactions.
+3. Define the triggers that will fire the Axeptio tag based on user interactions.
 
 ### Step 3: Test the Configuration
 1. Use GTM Server-Side's **Preview** tool to test the integration.
