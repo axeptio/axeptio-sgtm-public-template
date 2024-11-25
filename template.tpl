@@ -53,10 +53,13 @@ const generateRandom = require('generateRandom');
 const getType = require('getType');
 const makeString = require('makeString');
 const makeNumber = require('makeNumber');
+const setResponseStatus = require('setResponseStatus');
+const setResponseBody = require('setResponseBody');
+const setResponseHeader = require('setResponseHeader');
+const returnResponse = require('returnResponse');
 
 const eventData = getAllEventData();
 const queryParameters = eventData.queryParameters;
-
 
 const requestHeaders = {};
 
@@ -91,16 +94,22 @@ headerNames.forEach((headerName) => {
 const requestBody = eventData.requestBody;
   if (eventData.path === '/consents') {
   
-  sendHttpRequest('https://api.axept.io/v1/app' + eventData.requestPath, (statusCode, headers, body) => {
-    if (statusCode >= 200 && statusCode < 300) {
+  sendHttpRequest('https://api.axept.io/v1/app' + eventData.requestPath, {
+    headers: requestHeaders,
+    method: 'POST'
+  }, requestBody).then(response => {
+    if (response.statusCode >= 200 && response.statusCode < 300) {
+      setResponseStatus(response.statusCode);
+      setResponseBody(response.body);
+      for(let key in response.headers) {
+        setResponseHeader(key, response.headers[key]);
+      }
+      returnResponse();
       data.gtmOnSuccess();
     } else {
       data.gtmOnFailure();
-    }
-  }, {
-    headers: requestHeaders,
-    method: 'POST'
-  }, requestBody);
+    }  
+  });
 
     
 } else {
@@ -283,6 +292,44 @@ ___SERVER_PERMISSIONS___
     },
     "clientAnnotations": {
       "isEditedByUser": true
+    },
+    "isRequired": true
+  },
+  {
+    "instance": {
+      "key": {
+        "publicId": "access_response",
+        "versionId": "1"
+      },
+      "param": [
+        {
+          "key": "writeResponseAccess",
+          "value": {
+            "type": 1,
+            "string": "any"
+          }
+        },
+        {
+          "key": "writeHeaderAccess",
+          "value": {
+            "type": 1,
+            "string": "specific"
+          }
+        }
+      ]
+    },
+    "clientAnnotations": {
+      "isEditedByUser": true
+    },
+    "isRequired": true
+  },
+  {
+    "instance": {
+      "key": {
+        "publicId": "return_response",
+        "versionId": "1"
+      },
+      "param": []
     },
     "isRequired": true
   }
