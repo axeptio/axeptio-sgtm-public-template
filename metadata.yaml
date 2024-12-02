@@ -15,5 +15,5 @@
 homepage: "https://www.example.com"
 documentation: "https://www.example.com/documentation"
 versions:
-  - sha: 5f02a788b90ae804f86b04aa24af8937e567874a
+  - sha: 0b697c9c127a9adb9a71a39f04c531449cc0969a
     changeNotes: Initial Version
