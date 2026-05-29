@@ -72,6 +72,7 @@ const setCookie = require('setCookie');
 const getCookieValues = require('getCookieValues');
 const getContainerVersion = require('getContainerVersion');
 const getRequestHeader = require('getRequestHeader');
+const getRequestMethod = require('getRequestMethod');
 const logToConsole = require('logToConsole');
 const sha256Sync = require('sha256Sync');
 const decodeUriComponent = require('decodeUriComponent');
@@ -134,10 +135,22 @@ const routes = [
 ];
 
 // Strip the configured proxy base path (e.g. '/axeptio') before matching.
+// Normalize to a leading slash and no trailing slash, then strip only on a
+// path boundary so '/axeptio' never mis-strips '/axeptiofoo/...'.
 var path = eventData.path;
 var basePath = data.proxyBasePath || '';
-if (basePath && path.indexOf(basePath) === 0) {
-  path = path.substring(basePath.length);
+if (basePath) {
+  if (basePath.indexOf('/') !== 0) {
+    basePath = '/' + basePath;
+  }
+  while (basePath.length > 1 && basePath.charAt(basePath.length - 1) === '/') {
+    basePath = basePath.substring(0, basePath.length - 1);
+  }
+  if (path === basePath) {
+    path = '/';
+  } else if (path.indexOf(basePath + '/') === 0) {
+    path = path.substring(basePath.length);
+  }
 }
 
 // Preserve the original query string from the full request path.
@@ -145,10 +158,10 @@ var fullRequestPath = eventData.requestPath || path;
 var queryIndex = fullRequestPath.indexOf('?');
 var queryString = queryIndex >= 0 ? fullRequestPath.substring(queryIndex) : '';
 
-// Preserve the original HTTP method. GTM Server exposes no method getter, so
-// fall back to inferring it from the presence of a request body (assets are
-// GET; the consent submission is POST).
-var method = eventData.requestMethod || (requestBody ? 'POST' : 'GET');
+// Preserve the original HTTP method via the read_request lifecycle API
+// (getRequestMethod needs no permission). Fall back to a body-based guess only
+// if it is ever unavailable (assets are GET; the consent submission is POST).
+var method = getRequestMethod() || (requestBody ? 'POST' : 'GET');
 
 // Resolve the upstream URL from the matched namespace, or the legacy
 // '/consents' alias for installs created before namespace routing existed.
