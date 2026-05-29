@@ -17,3 +17,6 @@ documentation: "https://www.example.com/documentation"
 versions:
   - sha: f311fd0a2da4911824ff9dfd435805ec89d083a4
     changeNotes: Initial Version
+  - sha: a299456826a01e4db72e593ed01c35fe7cd000cd
+    changeNotes: |-
+      - **ci:** use .mjs commitlint config required by commitlint action
