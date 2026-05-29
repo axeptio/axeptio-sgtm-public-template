@@ -17,16 +17,34 @@ jobs:
   release-please:
     runs-on: ubuntu-latest
     steps:
+      # Authenticate as axeptio-bot (BOT_GITHUB_TOKEN). The enterprise forbids
+      # the default GITHUB_TOKEN from creating PRs; the bot is allowed to and
+      # may bypass the PR requirement when pushing the metadata sync commit.
       - uses: googleapis/release-please-action@v4
         id: release
         with:
           config-file: release-please-config.json
           manifest-file: .release-please-manifest.json
-          token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ secrets.BOT_GITHUB_TOKEN }}
 
       # The steps below only run when a release was just published.
       - uses: actions/checkout@v4
         if: ${{ steps.release.outputs.releases_created == 'true' }}
+        with:
+          # Use the bot token so the follow-up push authenticates as the bot
+          # (and can bypass branch protection on master).
+          token: ${{ secrets.BOT_GITHUB_TOKEN }}
+
+      # Import the bot's GPG key so the metadata commit is signed (required if
+      # master enforces signed commits). Also sets git user.name/email from the
+      # key identity and enables commit signing globally.
+      - name: Import bot GPG key
+        if: ${{ steps.release.outputs.releases_created == 'true' }}
+        uses: crazy-max/ghaction-import-gpg@v6
+        with:
+          gpg_private_key: ${{ secrets.BOT_GPG_PRIVATE_KEY }}
+          git_user_signingkey: true
+          git_commit_gpgsign: true
 
       - uses: actions/setup-node@v4
         if: ${{ steps.release.outputs.releases_created == 'true' }}
@@ -44,8 +62,6 @@ jobs:
         if: ${{ steps.release.outputs.releases_created == 'true' }}
         run: |
           if [[ -n "$(git status --porcelain metadata.yaml)" ]]; then
-            git config user.name "github-actions[bot]"
-            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
             git add metadata.yaml
             git commit -m "chore(metadata): sync version history for ${{ steps.release.outputs['.--tag_name'] }}"
             git push
