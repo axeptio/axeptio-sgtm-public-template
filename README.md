@@ -53,15 +53,51 @@ Follow these steps to integrate the **Axeptio sGTM** template with your **GTM Se
 1. After the template has been imported, go to the **Tags** section in your GTM Server-Side container.
 2. Click on **New Tag**, and then select the Axeptio sGTM template you just imported.
 3. Configure the tag settings:
-- **Project ID**: Enter your unique **Axeptio Project ID**.
+- **Axeptio Project ID**: Enter your unique **Axeptio Project ID** (your `clientId`).
 - **Cookie Version**: Define the version of the cookies managed by Axeptio.
-4. Define the **Triggers** that will fire the Axeptio tag based on user interactions. For example, you may want to trigger it based on user consent acceptance.
+- **Proxy Base Path**: The path portion of the SDK `proxyBaseUrl` served by this container. For a `proxyBaseUrl` of `https://sgtm.example.com/axeptio`, set this to `/axeptio`. Leave it empty if the container is mounted at the domain root.
+- **Enable debug logging**: Optional. Logs each matched route and upstream URL to the GTM Server console (use in debug environments only).
+4. Define the **Triggers** that will fire the Axeptio tag. Because the tag proxies every Axeptio request, fire it on all incoming requests to your proxy domain (e.g. a Client/trigger that claims requests whose path starts with your **Proxy Base Path**), not only on consent acceptance.
 
 ### Step 3: Test the Configuration
 1. Use the **Preview** tool in GTM Server-Side to test the tag's integration and functionality.
 2. Verify that user consent is correctly collected and transmitted securely from the server side.
 3. Ensure that cookies are extended, consent data is stored, and scripts are dynamically loaded based on user consent preferences.
 <br><br>
+## First-party proxy with Addingwell / Stape (`proxyBaseUrl`)
+
+The Axeptio JS SDK can route **all** of its network traffic through your own first-party domain instead of Axeptio's domains. This avoids ad-blocker / ITP restrictions, keeps consent traffic in a first-party context, and gives you full control over the data flow.
+
+You enable it with a single SDK setting on your site:
+
+```js
+window.axeptioSettings = {
+  clientId: 'your-project-id',
+  proxyBaseUrl: 'https://sgtm.example.com/axeptio'
+};
+```
+
+When `proxyBaseUrl` is set, the SDK rewrites every request from Axeptio's origins onto path namespaces under your proxy domain. **This template is the reverse proxy** that receives those paths in your GTM Server-Side container (hosted by Addingwell, Stape, or any sGTM provider) and forwards each one to the correct Axeptio origin:
+
+| Incoming path (under `proxyBaseUrl`) | Forwarded to |
+| --- | --- |
+| `/static/*` | `https://static.axept.io/*` |
+| `/client/*` | `https://client.axept.io/*` |
+| `/api/v1/*` | `https://api.axept.io/v1/*` |
+| `/favicons/*` | `https://favicons.axept.io/*` |
+| `/fonts/*` | `https://fonts.axept.io/*` |
+| `/static-eu/*` | `https://static.axeptio.eu/*` |
+
+The legacy `/consents` path is still accepted and forwarded to `https://api.axept.io/v1/app/consents` for backward compatibility.
+
+**Setup checklist**
+
+1. The **path** part of `proxyBaseUrl` must match the tag's **Proxy Base Path** field (e.g. `proxyBaseUrl: 'https://sgtm.example.com/axeptio'` → Proxy Base Path `/axeptio`; root mount → leave empty).
+2. The proxy domain (`sgtm.example.com`) must route to the GTM Server-Side container running this tag.
+3. The tag's trigger must fire for **all** proxied paths, not just consent — every namespace above flows through it.
+
+**Caveat — static assets / fonts:** the `/fonts/*` and `/favicons/*` namespaces serve binary assets. As noted in the SDK's proxy documentation, there is no fallback to Google Fonts in proxy mode — if a binary route is misconfigured, web fonts may fail silently. Verify these routes return byte-correct responses in your environment.
+
 ## Troubleshooting and Support🧑‍💻
 If you encounter any issues during the installation or configuration of the **Axeptio sGTM tag**, please consult the following resources:
 

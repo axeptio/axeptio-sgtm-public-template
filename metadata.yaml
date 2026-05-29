@@ -17,3 +17,11 @@ documentation: "https://www.example.com/documentation"
 versions:
   - sha: f311fd0a2da4911824ff9dfd435805ec89d083a4
     changeNotes: Initial Version
+  - sha: TBD
+    changeNotes: >-
+      Full proxyBaseUrl reverse proxy. Maps all six Axeptio origins
+      (static, client, api/v1, favicons, fonts, static-eu) to their upstream
+      hosts, preserves the request method and query string, adds Project ID,
+      Cookie Version, Proxy Base Path and debug-logging config fields, widens the
+      send_http permission to *.axept.io and *.axeptio.eu, and keeps the legacy
+      /consents route. Documents the Addingwell/Stape first-party proxy setup.

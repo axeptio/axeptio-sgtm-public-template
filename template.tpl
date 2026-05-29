@@ -20,7 +20,43 @@ ___INFO___
 
 ___TEMPLATE_PARAMETERS___
 
-[]
+[
+  {
+    "type": "TEXT",
+    "name": "projectId",
+    "displayName": "Axeptio Project ID",
+    "simpleValueType": true,
+    "valueValidators": [
+      {
+        "type": "NON_EMPTY"
+      }
+    ],
+    "help": "Your unique Axeptio Project ID (clientId). Used for reference and future validation."
+  },
+  {
+    "type": "TEXT",
+    "name": "cookieVersion",
+    "displayName": "Cookie Version",
+    "simpleValueType": true,
+    "help": "The version of the cookies managed by Axeptio."
+  },
+  {
+    "type": "TEXT",
+    "name": "proxyBasePath",
+    "displayName": "Proxy Base Path",
+    "simpleValueType": true,
+    "defaultValue": "",
+    "help": "The path portion of the SDK 'proxyBaseUrl' served by this container. For proxyBaseUrl 'https://sgtm.example.com/axeptio' set this to '/axeptio'. Leave empty if the container is mounted at the domain root. It is stripped from the request path before route matching."
+  },
+  {
+    "type": "CHECKBOX",
+    "name": "enableLogging",
+    "checkboxText": "Enable debug logging",
+    "simpleValueType": true,
+    "defaultValue": false,
+    "help": "Log matched routes and upstream URLs to the GTM Server console (debug environments only)."
+  }
+]
 
 
 ___SANDBOXED_JS_FOR_SERVER___
@@ -85,26 +121,68 @@ headerNames.forEach((headerName) => {
 
 
 const requestBody = eventData.requestBody;
-  if (eventData.path === '/consents') {
-  
-  sendHttpRequest('https://api.axept.io/v1/app' + eventData.requestPath, {
+
+// proxyBaseUrl namespace -> upstream Axeptio origin. Most specific prefixes
+// first so '/static-eu/' is never shadowed by '/static/'.
+const routes = [
+  { prefix: '/static-eu/', upstream: 'https://static.axeptio.eu/' },
+  { prefix: '/static/', upstream: 'https://static.axept.io/' },
+  { prefix: '/client/', upstream: 'https://client.axept.io/' },
+  { prefix: '/api/v1/', upstream: 'https://api.axept.io/v1/' },
+  { prefix: '/favicons/', upstream: 'https://favicons.axept.io/' },
+  { prefix: '/fonts/', upstream: 'https://fonts.axept.io/' }
+];
+
+// Strip the configured proxy base path (e.g. '/axeptio') before matching.
+var path = eventData.path;
+var basePath = data.proxyBasePath || '';
+if (basePath && path.indexOf(basePath) === 0) {
+  path = path.substring(basePath.length);
+}
+
+// Preserve the original query string from the full request path.
+var fullRequestPath = eventData.requestPath || path;
+var queryIndex = fullRequestPath.indexOf('?');
+var queryString = queryIndex >= 0 ? fullRequestPath.substring(queryIndex) : '';
+
+// Preserve the original HTTP method. GTM Server exposes no method getter, so
+// fall back to inferring it from the presence of a request body (assets are
+// GET; the consent submission is POST).
+var method = eventData.requestMethod || (requestBody ? 'POST' : 'GET');
+
+// Resolve the upstream URL from the matched namespace, or the legacy
+// '/consents' alias for installs created before namespace routing existed.
+var upstreamUrl = null;
+for (var i = 0; i < routes.length; i++) {
+  if (path.indexOf(routes[i].prefix) === 0) {
+    upstreamUrl = routes[i].upstream + path.substring(routes[i].prefix.length) + queryString;
+    break;
+  }
+}
+if (!upstreamUrl && path === '/consents') {
+  upstreamUrl = 'https://api.axept.io/v1/app/consents' + queryString;
+}
+
+if (upstreamUrl) {
+  if (data.enableLogging) {
+    logToConsole('Axeptio proxy: ' + method + ' ' + path + ' -> ' + upstreamUrl);
+  }
+  sendHttpRequest(upstreamUrl, {
     headers: requestHeaders,
-    method: 'POST'
+    method: method
   }, requestBody).then(response => {
     if (response.statusCode >= 200 && response.statusCode < 300) {
       setResponseStatus(response.statusCode);
       setResponseBody(response.body);
-      for(let key in response.headers) {
+      for (let key in response.headers) {
         setResponseHeader(key, response.headers[key]);
       }
       returnResponse();
       data.gtmOnSuccess();
     } else {
       data.gtmOnFailure();
-    }  
+    }
   });
-
-    
 } else {
   data.gtmOnSuccess();
 }
@@ -241,7 +319,11 @@ ___SERVER_PERMISSIONS___
             "listItem": [
               {
                 "type": 1,
-                "string": "https://api.axept.io/v1/*"
+                "string": "https://*.axept.io/*"
+              },
+              {
+                "type": 1,
+                "string": "https://*.axeptio.eu/*"
               }
             ]
           }
