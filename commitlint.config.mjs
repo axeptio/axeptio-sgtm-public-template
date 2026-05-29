@@ -1,6 +1,7 @@
 // Conventional Commits rules, shared by the CI lint workflow.
 // See https://www.conventionalcommits.org and https://commitlint.js.org
-module.exports = {
+// Must be .mjs (ESM): wagoid/commitlint-github-action rejects a .js config.
+export default {
   extends: ['@commitlint/config-conventional'],
   rules: {
     // Allowed commit types. `feat` and `fix` drive the semantic-version bump
