@@ -20,7 +20,7 @@ jobs:
       # Authenticate as axeptio-bot (BOT_GITHUB_TOKEN). The enterprise forbids
       # the default GITHUB_TOKEN from creating PRs; the bot is allowed to and
       # may bypass the PR requirement when pushing the metadata sync commit.
-      - uses: googleapis/release-please-action@v4
+      - uses: googleapis/release-please-action@c2a5a2bd6a758a0937f1ddb1e8950609867ed15c # v4.3.0
         id: release
         with:
           config-file: release-please-config.json
@@ -28,7 +28,7 @@ jobs:
           token: ${{ secrets.BOT_GITHUB_TOKEN }}
 
       # The steps below only run when a release was just published.
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
         if: ${{ steps.release.outputs.releases_created == 'true' }}
         with:
           # Use the bot token so the follow-up push authenticates as the bot
@@ -40,13 +40,13 @@ jobs:
       # key identity and enables commit signing globally.
       - name: Import bot GPG key
         if: ${{ steps.release.outputs.releases_created == 'true' }}
-        uses: crazy-max/ghaction-import-gpg@v6
+        uses: crazy-max/ghaction-import-gpg@e89d40939c28e39f97cf32126055eeae86ba74ec # v6.3.0
         with:
           gpg_private_key: ${{ secrets.BOT_GPG_PRIVATE_KEY }}
           git_user_signingkey: true
           git_commit_gpgsign: true
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         if: ${{ steps.release.outputs.releases_created == 'true' }}
         with:
           node-version: 20
