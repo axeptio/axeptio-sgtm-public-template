@@ -26,19 +26,14 @@ ___TEMPLATE_PARAMETERS___
     "name": "projectId",
     "displayName": "Axeptio Project ID",
     "simpleValueType": true,
-    "valueValidators": [
-      {
-        "type": "NON_EMPTY"
-      }
-    ],
-    "help": "Your unique Axeptio Project ID (clientId). Used for reference and future validation."
+    "help": "Optional. Your unique Axeptio Project ID (clientId). Reference only — not used at runtime; the proxy forwards requests as-is. Reserved for identification and future validation."
   },
   {
     "type": "TEXT",
     "name": "cookieVersion",
     "displayName": "Cookie Version",
     "simpleValueType": true,
-    "help": "The version of the cookies managed by Axeptio."
+    "help": "Optional. The version of the cookies managed by Axeptio. Reference only — not used at runtime by this proxy tag."
   },
   {
     "type": "TEXT",
@@ -159,9 +154,9 @@ var queryIndex = fullRequestPath.indexOf('?');
 var queryString = queryIndex >= 0 ? fullRequestPath.substring(queryIndex) : '';
 
 // Preserve the original HTTP method via the read_request lifecycle API
-// (getRequestMethod needs no permission). Fall back to a body-based guess only
-// if it is ever unavailable (assets are GET; the consent submission is POST).
-var method = getRequestMethod() || (requestBody ? 'POST' : 'GET');
+// (getRequestMethod needs no permission). It is authoritative for the incoming
+// request, including GET/POST/OPTIONS/HEAD; 'GET' is only a defensive default.
+var method = getRequestMethod() || 'GET';
 
 // Resolve the upstream URL from the matched namespace, or the legacy
 // '/consents' alias for installs created before namespace routing existed.
@@ -184,19 +179,34 @@ if (upstreamUrl) {
     headers: requestHeaders,
     method: method
   }, requestBody).then(response => {
-    if (response.statusCode >= 200 && response.statusCode < 300) {
-      setResponseStatus(response.statusCode);
-      setResponseBody(response.body);
-      for (let key in response.headers) {
-        setResponseHeader(key, response.headers[key]);
-      }
-      returnResponse();
+    // Relay the upstream response verbatim whatever the status code, so
+    // redirects (3xx), caching (304) and errors (4xx/5xx) reach the caller
+    // instead of being swallowed into an empty response.
+    setResponseStatus(response.statusCode);
+    setResponseBody(response.body);
+    for (let key in response.headers) {
+      setResponseHeader(key, response.headers[key]);
+    }
+    returnResponse();
+    if (response.statusCode >= 200 && response.statusCode < 400) {
       data.gtmOnSuccess();
     } else {
       data.gtmOnFailure();
     }
+  }).catch(() => {
+    // Network error / timeout reaching the upstream: return a deterministic
+    // 502 rather than leaving the request hanging.
+    setResponseStatus(502);
+    setResponseBody('Bad Gateway');
+    returnResponse();
+    data.gtmOnFailure();
   });
 } else {
+  // No namespace matched: respond with an explicit 404 so misroutes are
+  // diagnosable instead of surfacing as an empty 200.
+  setResponseStatus(404);
+  setResponseBody('Not Found');
+  returnResponse();
   data.gtmOnSuccess();
 }
 
