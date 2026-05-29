@@ -1,0 +1,55 @@
+name: Lint commits
+
+# Enforces Conventional Commits on pull requests. Runs entirely in CI, so
+# contributors don't need any local toolchain (no npm install / git hooks).
+on:
+  pull_request:
+    types: [opened, edited, reopened, synchronize]
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  pr-title:
+    # The PR title becomes the commit message when the PR is squash-merged,
+    # so it must itself be a valid Conventional Commit.
+    name: Validate PR title
+    runs-on: ubuntu-latest
+    steps:
+      - uses: amannn/action-semantic-pull-request@v5
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          types: |
+            feat
+            fix
+            docs
+            chore
+            refactor
+            perf
+            test
+            ci
+            build
+            revert
+          # Scopes are optional; allow any (the commitlint job warns on unknown ones).
+          requireScope: false
+          # Subject should not start with an uppercase letter.
+          subjectPattern: ^(?![A-Z]).+$
+          subjectPatternError: |
+            The subject "{subject}" found in the pull request title "{title}"
+            didn't match the configured pattern. The subject must start with a
+            lowercase letter.
+
+  commits:
+    # Lints every commit in the PR against commitlint.config.js. Useful when a
+    # PR is merged with a merge commit rather than squashed.
+    name: Validate commit messages
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: wagoid/commitlint-github-action@v6
+        with:
+          configFile: commitlint.config.js
