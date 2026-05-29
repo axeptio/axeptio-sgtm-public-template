@@ -18,6 +18,7 @@ This repository provides a template for integrating **Axeptio** as a **Consent M
    - [Step 2: Configure the Tag](#step-2-configure-the-tag)
    - [Step 3: Test the Configuration](#step-3-test-the-configuration)
 5. [Troubleshooting and Support](#troubleshooting-and-support)
+6. [Versioning and Releases](#versioning-and-releases)
 
 
 <br><br>
@@ -107,3 +108,17 @@ If you encounter any issues during the installation or configuration of the **Ax
 <br>
 
 Axeptio helps you provide a better user experience while ensuring compliance with data protection laws. If you have any questions or suggestions for improving this template, feel free to open an issue or submit a pull request.
+
+<br><br>
+
+## Versioning and Releases
+
+This repository follows [Semantic Versioning](https://semver.org/) and uses
+[Conventional Commits](https://www.conventionalcommits.org/). Releases are
+automated with [release-please](https://github.com/googleapis/release-please):
+when conventional commits land on `master`, a release pull request is kept up to
+date and, once merged, the version is bumped, the [CHANGELOG](./CHANGELOG.md) is
+updated, a git tag and a [GitHub Release](../../releases) are published, and the
+GTM `versions:` history in `metadata.yaml` is appended automatically.
+
+See [CONTRIBUTING.md](./CONTRIBUTING.md) for the commit message conventions.
