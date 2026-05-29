@@ -1,0 +1,54 @@
+name: Release
+
+# Drives Semantic Versioning from Conventional Commits. On every push to
+# master, release-please maintains a "release PR". Merging that PR bumps the
+# version, updates CHANGELOG.md, tags the commit and publishes a GitHub Release.
+# A follow-up step then appends the new version to the GTM metadata.yaml history.
+on:
+  push:
+    branches:
+      - master
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  release-please:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: googleapis/release-please-action@v4
+        id: release
+        with:
+          config-file: release-please-config.json
+          manifest-file: .release-please-manifest.json
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      # The steps below only run when a release was just published.
+      - uses: actions/checkout@v4
+        if: ${{ steps.release.outputs.releases_created == 'true' }}
+
+      - uses: actions/setup-node@v4
+        if: ${{ steps.release.outputs.releases_created == 'true' }}
+        with:
+          node-version: 20
+
+      - name: Sync metadata.yaml version history
+        if: ${{ steps.release.outputs.releases_created == 'true' }}
+        env:
+          RELEASE_TAG: ${{ steps.release.outputs['.--tag_name'] }}
+          RELEASE_SHA: ${{ steps.release.outputs['.--sha'] }}
+        run: node scripts/update-metadata-version.mjs
+
+      - name: Commit metadata.yaml
+        if: ${{ steps.release.outputs.releases_created == 'true' }}
+        run: |
+          if [[ -n "$(git status --porcelain metadata.yaml)" ]]; then
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add metadata.yaml
+            git commit -m "chore(metadata): sync version history for ${{ steps.release.outputs['.--tag_name'] }}"
+            git push
+          else
+            echo "metadata.yaml already up to date; nothing to commit."
+          fi
