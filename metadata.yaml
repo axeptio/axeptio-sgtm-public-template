@@ -28,3 +28,6 @@ versions:
       - address Copilot round 3 on proxy template
       - address Copilot round 4 on proxy template
       - address Copilot round 5 on proxy template
+  - sha: 6557523481fedee9b30a87e4096a7ec08e7f99bd
+    changeNotes: |-
+      - **test:** tighten deepEqual key-set check in template test runner
