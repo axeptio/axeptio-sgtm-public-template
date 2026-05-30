@@ -1,0 +1,33 @@
+name: E2E (live test container)
+
+# End-to-end checks against a LIVE test sGTM container (Addingwell) running this
+# template: each Axeptio namespace is forwarded to the right upstream, and /fonts
+# and /favicons come back byte-identical. This does NOT gate PRs — it needs a live
+# server, so it runs on demand and on a weekly schedule. Without the tagging-URL
+# secret the suite skips itself (green no-op).
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 6 * * 1' # Mondays 06:00 UTC
+
+permissions:
+  contents: read
+
+jobs:
+  e2e:
+    name: Proxy e2e
+    runs-on: ubuntu-latest
+    env:
+      # Set these in repo settings to enable the suite:
+      #   Secret  SGTM_TEST_TAGGING_URL        e.g. https://sgtm-test.example.com
+      #   Var     SGTM_TEST_PROXY_BASE_PATH    e.g. /axeptio (empty if root-mounted)
+      TAGGING_URL: ${{ secrets.SGTM_TEST_TAGGING_URL }}
+      PROXY_BASE_PATH: ${{ vars.SGTM_TEST_PROXY_BASE_PATH }}
+    steps:
+      - uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - run: npm run e2e
