@@ -4,7 +4,9 @@
 </h1>
 <br>
 
-This repository provides a template for integrating **Axeptio** as a **Consent Management Platform (CMP)** tag within **Google Tag Manager (GTM)** Server-Side. The primary goal of this template is to streamline the deployment, configuration, and management of consent mechanisms across websites, ensuring full compliance with data protection regulations like GDPR and ePrivacy.
+This repository provides a **Google Tag Manager (GTM) Server-Side** template that acts as a **first-party reverse proxy** for **Axeptio**. When the Axeptio JS SDK is configured with `proxyBaseUrl`, it routes all of its traffic through your own domain; this tag receives those requests in your sGTM container and forwards each one to the correct Axeptio origin. Serving Axeptio first-party this way keeps consent/tracking traffic out of reach of ad-blockers and ITP, extends cookie lifetimes, and gives you full control over the data flow — all while staying compliant with GDPR and the ePrivacy Directive.
+
+> **Scope:** this template is a transparent proxy. It does not itself render consent UI or make consent decisions — that is the Axeptio SDK's job. See [First-party proxy with Addingwell / Stape](#first-party-proxy-with-addingwell--stape-proxybaseurl) for the full request flow.
 
 <br>
 
@@ -26,21 +28,21 @@ This repository provides a template for integrating **Axeptio** as a **Consent M
 ## 🍪About Axeptio
 [Axeptio](https://www.axept.io/) is a highly configurable **Consent Management Platform (CMP)** that enables websites to collect, manage, and store user consent data in a **transparent** and **privacy-first** manner. It is designed to facilitate compliance with global data privacy laws such as **GDPR** and the **ePrivacy Directive**. Axeptio allows users to customize consent forms and manage user preferences with ease while offering a seamless experience across web environments.
 <br><br>
-## Key Features of Axeptio
-- **Full compliance** with GDPR and the ePrivacy Directive.
-- **Customizable and intuitive** interface for users, ensuring flexibility in implementation.
-- **Seamless integration** with existing cookie management tools.
-- **Dynamic script management**, enabling scripts to load based on user consent status.
+## Key Features of this template
+- **Full first-party proxy**: forwards all six Axeptio `proxyBaseUrl` namespaces (`/static`, `/client`, `/api/v1`, `/favicons`, `/fonts`, `/static-eu`) to their upstream Axeptio hosts.
+- **Transparent forwarding**: preserves the HTTP method, query string, and relevant request/response headers, and relays the upstream status code as-is.
+- **Configurable mount path**: works whether your `proxyBaseUrl` is at the domain root or under a sub-path.
+- **Least privilege**: only requests the GTM permissions it actually uses, with outbound calls scoped to Axeptio domains.
 
 <br><br> 
 
 ## Benefits of Using sGTM with Axeptio
-By leveraging **GTM Server-Side** (sGTM) with Axeptio, organizations can enhance the consent management process with multiple key benefits:
+By proxying Axeptio through **GTM Server-Side** (sGTM) on your own domain, you gain:
 
-- **Prolonged Cookie Lifespan**: Cookies can be securely managed and extended on the server side, reducing the restrictions imposed by client-side limitations such as cookie expiration or privacy controls.
-- **Enhanced Data Security**: Server-side tagging minimizes the exposure of sensitive data on the client side, offering added protection for user consent and other personal data.
-- **Improved Performance**: Offloading tag management to the server reduces the load on the client side, resulting in faster page loads and a more optimized user experience.
-- **Better Control and Compliance** Server-side management of user consent data ensures that you have full control over the flow of data between your website and third-party services, minimizing risks related to privacy breaches.
+- **Ad-blocker / ITP resilience**: Because Axeptio is served first-party, consent and tracking requests are not blocked by browser privacy protections or ad-blockers.
+- **Prolonged Cookie Lifespan**: First-party cookies set through your domain are not subject to the short lifetimes browsers impose on third-party cookies.
+- **Enhanced Data Security & Control**: All Axeptio traffic flows through infrastructure you control, so you own the data path between your site and Axeptio.
+- **Improved Performance**: Requests resolve on your own domain/edge instead of multiple third-party origins.
 <br><br>
 
 ## 🛠How to Import and Use the Template in GTM Server-Side
