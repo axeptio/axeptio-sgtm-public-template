@@ -61,9 +61,11 @@ Follow these steps to integrate the **Axeptio sGTM** template with your **GTM Se
 4. Define the **Triggers** that will fire the Axeptio tag. Because the tag proxies every Axeptio request, fire it on all incoming requests to your proxy domain (e.g. a Client/trigger that claims requests whose path starts with your **Proxy Base Path**), not only on consent acceptance.
 
 ### Step 3: Test the Configuration
-1. Use the **Preview** tool in GTM Server-Side to test the tag's integration and functionality.
-2. Verify that user consent is correctly collected and transmitted securely from the server side.
-3. Ensure that cookies are extended, consent data is stored, and scripts are dynamically loaded based on user consent preferences.
+Use the **Preview** tool in GTM Server-Side to verify the tag proxies traffic correctly:
+1. **Namespace routing** — send a request to each path (`/api/v1/...`, `/client/...`, `/static/...`, `/fonts/...`, `/favicons/...`, `/static-eu/...`) and confirm it reaches the matching Axeptio upstream and returns the expected status.
+2. **Method & query preservation** — confirm `GET` vs `POST` and the original query string are forwarded unchanged (e.g. a consent submission to `/api/v1/app/consents` is a `POST`).
+3. **Binary asset relay** — confirm `/fonts/*` and `/favicons/*` return byte-correct assets (web fonts render, favicon loads), not corrupted bodies.
+4. **Base path** — if you set a **Proxy Base Path**, confirm requests under it (e.g. `/axeptio/api/v1/...`) match, and that an unknown path returns a `404`.
 <br><br>
 ## First-party proxy with Addingwell / Stape (`proxyBaseUrl`)
 

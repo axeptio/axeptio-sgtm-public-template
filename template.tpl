@@ -56,34 +56,17 @@ ___TEMPLATE_PARAMETERS___
 
 ___SANDBOXED_JS_FOR_SERVER___
 
-const encodeUriComponent = require('encodeUriComponent');
 const getAllEventData = require('getAllEventData');
-const JSON = require('JSON');
-const Math = require('Math');
-const sendPixelFromBrowser = require('sendPixelFromBrowser');
 const sendHttpRequest = require('sendHttpRequest');
-const getTimestampMillis = require('getTimestampMillis');
-const setCookie = require('setCookie');
-const getCookieValues = require('getCookieValues');
-const getContainerVersion = require('getContainerVersion');
 const getRequestHeader = require('getRequestHeader');
 const getRequestMethod = require('getRequestMethod');
 const logToConsole = require('logToConsole');
-const sha256Sync = require('sha256Sync');
-const decodeUriComponent = require('decodeUriComponent');
-const parseUrl = require('parseUrl');
-const computeEffectiveTldPlusOne = require('computeEffectiveTldPlusOne');
-const generateRandom = require('generateRandom');
-const getType = require('getType');
-const makeString = require('makeString');
-const makeNumber = require('makeNumber');
 const setResponseStatus = require('setResponseStatus');
 const setResponseBody = require('setResponseBody');
 const setResponseHeader = require('setResponseHeader');
 const returnResponse = require('returnResponse');
 
 const eventData = getAllEventData();
-const queryParameters = eventData.queryParameters;
 
 const requestHeaders = {};
 
@@ -141,6 +124,13 @@ if (basePath) {
   while (basePath.length > 1 && basePath.charAt(basePath.length - 1) === '/') {
     basePath = basePath.substring(0, basePath.length - 1);
   }
+  // A base path of just '/' (e.g. user entered '/' or '////') means root mount;
+  // treat it as empty so routing is not silently broken.
+  if (basePath === '/') {
+    basePath = '';
+  }
+}
+if (basePath) {
   if (path === basePath) {
     path = '/';
   } else if (path.indexOf(basePath + '/') === 0) {
@@ -202,39 +192,19 @@ if (upstreamUrl) {
     data.gtmOnFailure();
   });
 } else {
-  // No namespace matched: respond with an explicit 404 so misroutes are
-  // diagnosable instead of surfacing as an empty 200.
+  // No namespace matched: respond with an explicit 404 and mark the tag as
+  // failed so misroutes are diagnosable instead of looking like a successful
+  // execution in Preview/monitoring.
   setResponseStatus(404);
   setResponseBody('Not Found');
   returnResponse();
-  data.gtmOnSuccess();
+  data.gtmOnFailure();
 }
 
 
 ___SERVER_PERMISSIONS___
 
 [
-  {
-    "instance": {
-      "key": {
-        "publicId": "get_cookies",
-        "versionId": "1"
-      },
-      "param": [
-        {
-          "key": "cookieAccess",
-          "value": {
-            "type": 1,
-            "string": "any"
-          }
-        }
-      ]
-    },
-    "clientAnnotations": {
-      "isEditedByUser": true
-    },
-    "isRequired": true
-  },
   {
     "instance": {
       "key": {
@@ -259,29 +229,6 @@ ___SERVER_PERMISSIONS___
   {
     "instance": {
       "key": {
-        "publicId": "read_container_data",
-        "versionId": "1"
-      },
-      "param": []
-    },
-    "isRequired": true
-  },
-  {
-    "instance": {
-      "key": {
-        "publicId": "set_cookies",
-        "versionId": "1"
-      },
-      "param": []
-    },
-    "clientAnnotations": {
-      "isEditedByUser": true
-    },
-    "isRequired": true
-  },
-  {
-    "instance": {
-      "key": {
         "publicId": "read_event_data",
         "versionId": "1"
       },
@@ -291,27 +238,6 @@ ___SERVER_PERMISSIONS___
           "value": {
             "type": 1,
             "string": "any"
-          }
-        }
-      ]
-    },
-    "clientAnnotations": {
-      "isEditedByUser": true
-    },
-    "isRequired": true
-  },
-  {
-    "instance": {
-      "key": {
-        "publicId": "send_pixel_from_browser",
-        "versionId": "1"
-      },
-      "param": [
-        {
-          "key": "allowedUrls",
-          "value": {
-            "type": 1,
-            "string": "specific"
           }
         }
       ]
@@ -411,7 +337,7 @@ ___SERVER_PERMISSIONS___
           "key": "writeHeaderAccess",
           "value": {
             "type": 1,
-            "string": "specific"
+            "string": "any"
           }
         }
       ]
