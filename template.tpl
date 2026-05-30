@@ -70,32 +70,37 @@ const eventData = getAllEventData();
 
 const requestHeaders = {};
 
-var headerNames = [
+// Content-Length / Content-Encoding are intentionally NOT forwarded: the HTTP
+// client sets Content-Length for the body it actually sends, and forwarding a
+// stale length (or an encoding the body no longer has) can cause upstream
+// request failures or hung connections.
+const headerNames = [
   'Accept',
   'Accept-Language',
   'Cache-Control',
-  'Content-Length',	
-  'Content-Encoding',
   'Content-Type',
   'Dnt',
-  'Forwarded',	
-  'Origin',	
+  'Forwarded',
+  'Origin',
   'Pragma',
-  'Priority',	
+  'Priority',
   'Referer',
-  'Sec-Ch-Ua',	
-  'Sec-Ch-Ua-Mobile',	
-  'Sec-Ch-Ua-Platform',	
+  'Sec-Ch-Ua',
+  'Sec-Ch-Ua-Mobile',
+  'Sec-Ch-Ua-Platform',
   'Sec-Fetch-Dest',
   'Sec-Fetch-Mode',
-  'Sec-Fetch-Site',	
+  'Sec-Fetch-Site',
   'Traceparent',
   'User-Agent',
   'Via'
 ];
 
 headerNames.forEach((headerName) => {
-   requestHeaders[headerName] = getRequestHeader(headerName);
+  const value = getRequestHeader(headerName);
+  if (value !== undefined && value !== null) {
+    requestHeaders[headerName] = value;
+  }
 });
 
 
@@ -112,11 +117,26 @@ const routes = [
   { prefix: '/fonts/', upstream: 'https://fonts.axept.io/' }
 ];
 
+// Hop-by-hop and framing headers that must not be relayed from the upstream
+// response: they describe a single connection and the GTM HTTP client computes
+// its own framing. Forwarding them can corrupt the response to the client.
+const droppedResponseHeaders = {
+  'connection': true,
+  'keep-alive': true,
+  'proxy-authenticate': true,
+  'proxy-authorization': true,
+  'te': true,
+  'trailer': true,
+  'transfer-encoding': true,
+  'upgrade': true,
+  'content-length': true
+};
+
 // Strip the configured proxy base path (e.g. '/axeptio') before matching.
 // Normalize to a leading slash and no trailing slash, then strip only on a
 // path boundary so '/axeptio' never mis-strips '/axeptiofoo/...'.
-var path = eventData.path;
-var basePath = data.proxyBasePath || '';
+let path = eventData.path;
+let basePath = data.proxyBasePath || '';
 if (basePath) {
   if (basePath.indexOf('/') !== 0) {
     basePath = '/' + basePath;
@@ -139,19 +159,19 @@ if (basePath) {
 }
 
 // Preserve the original query string from the full request path.
-var fullRequestPath = eventData.requestPath || path;
-var queryIndex = fullRequestPath.indexOf('?');
-var queryString = queryIndex >= 0 ? fullRequestPath.substring(queryIndex) : '';
+const fullRequestPath = eventData.requestPath || path;
+const queryIndex = fullRequestPath.indexOf('?');
+const queryString = queryIndex >= 0 ? fullRequestPath.substring(queryIndex) : '';
 
 // Preserve the original HTTP method via the read_request lifecycle API
 // (getRequestMethod needs no permission). It is authoritative for the incoming
 // request, including GET/POST/OPTIONS/HEAD; 'GET' is only a defensive default.
-var method = getRequestMethod() || 'GET';
+const method = getRequestMethod() || 'GET';
 
 // Resolve the upstream URL from the matched namespace, or the legacy
 // '/consents' alias for installs created before namespace routing existed.
-var upstreamUrl = null;
-for (var i = 0; i < routes.length; i++) {
+let upstreamUrl = null;
+for (let i = 0; i < routes.length; i++) {
   if (path.indexOf(routes[i].prefix) === 0) {
     upstreamUrl = routes[i].upstream + path.substring(routes[i].prefix.length) + queryString;
     break;
@@ -175,7 +195,14 @@ if (upstreamUrl) {
     setResponseStatus(response.statusCode);
     setResponseBody(response.body);
     for (let key in response.headers) {
-      setResponseHeader(key, response.headers[key]);
+      const value = response.headers[key];
+      if (value === undefined || value === null) {
+        continue;
+      }
+      if (droppedResponseHeaders[key.toLowerCase()]) {
+        continue;
+      }
+      setResponseHeader(key, value);
     }
     returnResponse();
     if (response.statusCode >= 200 && response.statusCode < 400) {

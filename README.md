@@ -54,10 +54,10 @@ Follow these steps to integrate the **Axeptio sGTM** template with your **GTM Se
 1. After the template has been imported, go to the **Tags** section in your GTM Server-Side container.
 2. Click on **New Tag**, and then select the Axeptio sGTM template you just imported.
 3. Configure the tag settings:
-- **Axeptio Project ID**: Optional. Your unique **Axeptio Project ID** (your `clientId`). Reference only — it is **not used at runtime** by this proxy tag (the SDK already carries `clientId`); it is kept for identification and possible future validation.
-- **Cookie Version**: Optional. The version of the cookies managed by Axeptio. Reference only — **not used at runtime** by this proxy tag.
-- **Proxy Base Path**: The path portion of the SDK `proxyBaseUrl` served by this container. For a `proxyBaseUrl` of `https://sgtm.example.com/axeptio`, set this to `/axeptio`. Leave it empty if the container is mounted at the domain root.
-- **Enable debug logging**: Optional. Logs each matched route and upstream URL to the GTM Server console (use in debug environments only).
+   - **Axeptio Project ID**: Optional. Your unique **Axeptio Project ID** (your `clientId`). Reference only — it is **not used at runtime** by this proxy tag (the SDK already carries `clientId`); it is kept for identification and possible future validation.
+   - **Cookie Version**: Optional. The version of the cookies managed by Axeptio. Reference only — **not used at runtime** by this proxy tag.
+   - **Proxy Base Path**: The path portion of the SDK `proxyBaseUrl` served by this container. For a `proxyBaseUrl` of `https://sgtm.example.com/axeptio`, set this to `/axeptio`. Leave it empty if the container is mounted at the domain root.
+   - **Enable debug logging**: Optional. Logs each matched route and upstream URL to the GTM Server console (use in debug environments only).
 4. Define the **Triggers** that will fire the Axeptio tag. Because the tag proxies every Axeptio request, fire it on all incoming requests to your proxy domain (e.g. a Client/trigger that claims requests whose path starts with your **Proxy Base Path**), not only on consent acceptance.
 
 ### Step 3: Test the Configuration
