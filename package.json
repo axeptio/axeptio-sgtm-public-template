@@ -4,7 +4,8 @@
   "private": true,
   "description": "Tooling to unit-test the Axeptio sGTM custom template (template.tpl). Not published; the template itself is distributed via the GTM Community Template Gallery.",
   "scripts": {
-    "test": "node --test"
+    "test": "node --test",
+    "e2e": "node --test e2e/proxy-e2e.mjs"
   },
   "devDependencies": {
     "js-yaml": "^4.1.0"
