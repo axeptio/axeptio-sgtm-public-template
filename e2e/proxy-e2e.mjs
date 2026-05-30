@@ -23,24 +23,25 @@ import assert from 'node:assert/strict';
 const TAGGING_URL = (process.env.TAGGING_URL || '').replace(/\/+$/, '');
 const BASE_PATH = process.env.PROXY_BASE_PATH || '';
 
-// One sample per namespace: the path the proxy receives (after the base path) and
-// the upstream origin it must be forwarded to. `compare`:
+// One sample per namespace. `env` is the override variable (kept explicit so the
+// skip hint never points at a name the harness doesn't read), `def` the default
+// sample path the proxy receives (after the base path), `upstream` the origin it
+// must be forwarded to. `compare`:
 //   'bytes'     — proxied body must be byte-identical to the upstream asset
 //                 (static files; the only way to catch binary relay corruption).
 //   'reachable' — dynamic endpoint: assert the proxy relays the upstream status
 //                 (a byte compare would be flaky). Covers the namespace without
 //                 asserting a moving body.
-// Override any path via env once the real container/assets are known.
 const ROUTES = [
-  { ns: 'static',    path: process.env.E2E_STATIC_PATH   || '/static/axeptio.js',          upstream: 'https://static.axept.io',   compare: 'bytes' },
-  { ns: 'client',    path: process.env.E2E_CLIENT_PATH   || '/client/axeptio.json',        upstream: 'https://client.axept.io',   compare: 'bytes' },
-  { ns: 'static-eu', path: process.env.E2E_STATICEU_PATH || '/static-eu/axeptio.js',       upstream: 'https://static.axeptio.eu', compare: 'bytes' },
-  { ns: 'fonts',     path: process.env.E2E_FONT_PATH     || '/fonts/axeptio.woff2',        upstream: 'https://fonts.axept.io',    compare: 'bytes' },
-  { ns: 'favicons',  path: process.env.E2E_FAVICON_PATH  || '/favicons/axeptio.png',       upstream: 'https://favicons.axept.io', compare: 'bytes' },
+  { ns: 'static',    env: 'E2E_STATIC_PATH',   def: '/static/axeptio.js',         upstream: 'https://static.axept.io',   compare: 'bytes' },
+  { ns: 'client',    env: 'E2E_CLIENT_PATH',   def: '/client/axeptio.json',       upstream: 'https://client.axept.io',   compare: 'bytes' },
+  { ns: 'static-eu', env: 'E2E_STATICEU_PATH', def: '/static-eu/axeptio.js',      upstream: 'https://static.axeptio.eu', compare: 'bytes' },
+  { ns: 'fonts',     env: 'E2E_FONT_PATH',     def: '/fonts/axeptio.woff2',       upstream: 'https://fonts.axept.io',    compare: 'bytes' },
+  { ns: 'favicons',  env: 'E2E_FAVICON_PATH',  def: '/favicons/axeptio.png',      upstream: 'https://favicons.axept.io', compare: 'bytes' },
   // /api/v1/ forwards to api.axept.io/v1/ — needs a real, GET-able sample
   // (e.g. an app-config endpoint for a test clientId) via E2E_API_PATH.
-  { ns: 'api',       path: process.env.E2E_API_PATH      || '/api/v1/app/your-client-id',  upstream: 'https://api.axept.io',      compare: 'reachable' },
-];
+  { ns: 'api',       env: 'E2E_API_PATH',      def: '/api/v1/app/your-client-id', upstream: 'https://api.axept.io',      compare: 'reachable' },
+].map((r) => ({ ...r, path: process.env[r.env] || r.def }));
 
 const enabled = TAGGING_URL.length > 0;
 if (!enabled) {
@@ -59,7 +60,7 @@ for (const route of ROUTES) {
     const direct = await fetch(upstreamFor(route));
     if (!direct.ok) {
       // Don't claim a pass for a case we couldn't actually verify.
-      t.skip(`upstream ${upstreamFor(route)} returned ${direct.status}; set E2E_${route.ns.toUpperCase()}_PATH to a valid asset`);
+      t.skip(`upstream ${upstreamFor(route)} returned ${direct.status}; set ${route.env} to a valid asset`);
       return;
     }
     const proxied = await fetch(proxyUrl(route.path));
