@@ -20,120 +20,224 @@ ___INFO___
 
 ___TEMPLATE_PARAMETERS___
 
-[]
+[
+  {
+    "type": "TEXT",
+    "name": "projectId",
+    "displayName": "Axeptio Project ID",
+    "simpleValueType": true,
+    "help": "Optional. Your unique Axeptio Project ID (clientId). Reference only — not used at runtime; the proxy forwards requests as-is. Reserved for identification and future validation."
+  },
+  {
+    "type": "TEXT",
+    "name": "cookieVersion",
+    "displayName": "Cookie Version",
+    "simpleValueType": true,
+    "help": "Optional. The version of the cookies managed by Axeptio. Reference only — not used at runtime by this proxy tag."
+  },
+  {
+    "type": "TEXT",
+    "name": "proxyBasePath",
+    "displayName": "Proxy Base Path",
+    "simpleValueType": true,
+    "defaultValue": "",
+    "help": "The path portion of the SDK 'proxyBaseUrl' served by this container. For proxyBaseUrl 'https://sgtm.example.com/axeptio' set this to '/axeptio'. Leave empty if the container is mounted at the domain root. It is stripped from the request path before route matching."
+  },
+  {
+    "type": "CHECKBOX",
+    "name": "enableLogging",
+    "checkboxText": "Enable debug logging",
+    "simpleValueType": true,
+    "defaultValue": false,
+    "help": "Log matched routes and upstream URLs to the GTM Server console (debug environments only)."
+  }
+]
 
 
 ___SANDBOXED_JS_FOR_SERVER___
 
-const encodeUriComponent = require('encodeUriComponent');
 const getAllEventData = require('getAllEventData');
-const JSON = require('JSON');
-const Math = require('Math');
-const sendPixelFromBrowser = require('sendPixelFromBrowser');
 const sendHttpRequest = require('sendHttpRequest');
-const getTimestampMillis = require('getTimestampMillis');
-const setCookie = require('setCookie');
-const getCookieValues = require('getCookieValues');
-const getContainerVersion = require('getContainerVersion');
 const getRequestHeader = require('getRequestHeader');
+const getRequestMethod = require('getRequestMethod');
 const logToConsole = require('logToConsole');
-const sha256Sync = require('sha256Sync');
-const decodeUriComponent = require('decodeUriComponent');
-const parseUrl = require('parseUrl');
-const computeEffectiveTldPlusOne = require('computeEffectiveTldPlusOne');
-const generateRandom = require('generateRandom');
-const getType = require('getType');
-const makeString = require('makeString');
-const makeNumber = require('makeNumber');
 const setResponseStatus = require('setResponseStatus');
 const setResponseBody = require('setResponseBody');
 const setResponseHeader = require('setResponseHeader');
 const returnResponse = require('returnResponse');
 
 const eventData = getAllEventData();
-const queryParameters = eventData.queryParameters;
 
 const requestHeaders = {};
 
-var headerNames = [
+// Content-Length / Content-Encoding are intentionally NOT forwarded: the HTTP
+// client sets Content-Length for the body it actually sends, and forwarding a
+// stale length (or an encoding the body no longer has) can cause upstream
+// request failures or hung connections.
+const headerNames = [
   'Accept',
   'Accept-Language',
   'Cache-Control',
-  'Content-Length',	
-  'Content-Encoding',
   'Content-Type',
   'Dnt',
-  'Forwarded',	
-  'Origin',	
+  'Forwarded',
+  'If-Match',
+  'If-Modified-Since',
+  'If-None-Match',
+  'If-Range',
+  'If-Unmodified-Since',
+  'Origin',
   'Pragma',
-  'Priority',	
+  'Priority',
+  'Range',
   'Referer',
-  'Sec-Ch-Ua',	
-  'Sec-Ch-Ua-Mobile',	
-  'Sec-Ch-Ua-Platform',	
+  'Sec-Ch-Ua',
+  'Sec-Ch-Ua-Mobile',
+  'Sec-Ch-Ua-Platform',
   'Sec-Fetch-Dest',
   'Sec-Fetch-Mode',
-  'Sec-Fetch-Site',	
+  'Sec-Fetch-Site',
   'Traceparent',
   'User-Agent',
   'Via'
 ];
 
 headerNames.forEach((headerName) => {
-   requestHeaders[headerName] = getRequestHeader(headerName);
+  const value = getRequestHeader(headerName);
+  if (value !== undefined && value !== null) {
+    requestHeaders[headerName] = value;
+  }
 });
 
 
 const requestBody = eventData.requestBody;
-  if (eventData.path === '/consents') {
-  
-  sendHttpRequest('https://api.axept.io/v1/app' + eventData.requestPath, {
+
+// proxyBaseUrl namespace -> upstream Axeptio origin. Most specific prefixes
+// first so '/static-eu/' is never shadowed by '/static/'.
+const routes = [
+  { prefix: '/static-eu/', upstream: 'https://static.axeptio.eu/' },
+  { prefix: '/static/', upstream: 'https://static.axept.io/' },
+  { prefix: '/client/', upstream: 'https://client.axept.io/' },
+  { prefix: '/api/v1/', upstream: 'https://api.axept.io/v1/' },
+  { prefix: '/favicons/', upstream: 'https://favicons.axept.io/' },
+  { prefix: '/fonts/', upstream: 'https://fonts.axept.io/' }
+];
+
+// Hop-by-hop and framing headers that must not be relayed from the upstream
+// response: they describe a single connection and the GTM HTTP client computes
+// its own framing. Forwarding them can corrupt the response to the client.
+const droppedResponseHeaders = {
+  'connection': true,
+  'keep-alive': true,
+  'proxy-authenticate': true,
+  'proxy-authorization': true,
+  'te': true,
+  'trailer': true,
+  'transfer-encoding': true,
+  'upgrade': true,
+  'content-length': true
+};
+
+// Strip the configured proxy base path (e.g. '/axeptio') before matching.
+// Normalize to a leading slash and no trailing slash, then strip only on a
+// path boundary so '/axeptio' never mis-strips '/axeptiofoo/...'.
+let path = eventData.path;
+let basePath = data.proxyBasePath || '';
+if (basePath) {
+  if (basePath.indexOf('/') !== 0) {
+    basePath = '/' + basePath;
+  }
+  while (basePath.length > 1 && basePath.charAt(basePath.length - 1) === '/') {
+    basePath = basePath.substring(0, basePath.length - 1);
+  }
+  // A base path of just '/' (e.g. user entered '/' or '////') means root mount;
+  // treat it as empty so routing is not silently broken.
+  if (basePath === '/') {
+    basePath = '';
+  }
+}
+if (basePath) {
+  if (path === basePath) {
+    path = '/';
+  } else if (path.indexOf(basePath + '/') === 0) {
+    path = path.substring(basePath.length);
+  }
+}
+
+// Preserve the original query string from the full request path.
+const fullRequestPath = eventData.requestPath || path;
+const queryIndex = fullRequestPath.indexOf('?');
+const queryString = queryIndex >= 0 ? fullRequestPath.substring(queryIndex) : '';
+
+// Preserve the original HTTP method via the read_request lifecycle API
+// (getRequestMethod needs no permission). It is authoritative for the incoming
+// request, including GET/POST/OPTIONS/HEAD; 'GET' is only a defensive default.
+const method = getRequestMethod() || 'GET';
+
+// Resolve the upstream URL from the matched namespace, or the legacy
+// '/consents' alias for installs created before namespace routing existed.
+let upstreamUrl = null;
+for (let i = 0; i < routes.length; i++) {
+  if (path.indexOf(routes[i].prefix) === 0) {
+    upstreamUrl = routes[i].upstream + path.substring(routes[i].prefix.length) + queryString;
+    break;
+  }
+}
+if (!upstreamUrl && path === '/consents') {
+  upstreamUrl = 'https://api.axept.io/v1/app/consents' + queryString;
+}
+
+if (upstreamUrl) {
+  if (data.enableLogging) {
+    logToConsole('Axeptio proxy: ' + method + ' ' + path + ' -> ' + upstreamUrl);
+  }
+  sendHttpRequest(upstreamUrl, {
     headers: requestHeaders,
-    method: 'POST'
+    method: method
   }, requestBody).then(response => {
-    if (response.statusCode >= 200 && response.statusCode < 300) {
-      setResponseStatus(response.statusCode);
-      setResponseBody(response.body);
-      for(let key in response.headers) {
-        setResponseHeader(key, response.headers[key]);
+    // Relay the upstream response verbatim whatever the status code, so
+    // redirects (3xx), caching (304) and errors (4xx/5xx) reach the caller
+    // instead of being swallowed into an empty response.
+    setResponseStatus(response.statusCode);
+    setResponseBody(response.body);
+    for (let key in response.headers) {
+      const value = response.headers[key];
+      if (value === undefined || value === null) {
+        continue;
       }
-      returnResponse();
+      if (droppedResponseHeaders[key.toLowerCase()]) {
+        continue;
+      }
+      setResponseHeader(key, value);
+    }
+    returnResponse();
+    if (response.statusCode >= 200 && response.statusCode < 400) {
       data.gtmOnSuccess();
     } else {
       data.gtmOnFailure();
-    }  
+    }
+  }).catch(() => {
+    // Network error / timeout reaching the upstream: return a deterministic
+    // 502 rather than leaving the request hanging.
+    setResponseStatus(502);
+    setResponseBody('Bad Gateway');
+    returnResponse();
+    data.gtmOnFailure();
   });
-
-    
 } else {
-  data.gtmOnSuccess();
+  // No namespace matched: respond with an explicit 404 and mark the tag as
+  // failed so misroutes are diagnosable instead of looking like a successful
+  // execution in Preview/monitoring.
+  setResponseStatus(404);
+  setResponseBody('Not Found');
+  returnResponse();
+  data.gtmOnFailure();
 }
 
 
 ___SERVER_PERMISSIONS___
 
 [
-  {
-    "instance": {
-      "key": {
-        "publicId": "get_cookies",
-        "versionId": "1"
-      },
-      "param": [
-        {
-          "key": "cookieAccess",
-          "value": {
-            "type": 1,
-            "string": "any"
-          }
-        }
-      ]
-    },
-    "clientAnnotations": {
-      "isEditedByUser": true
-    },
-    "isRequired": true
-  },
   {
     "instance": {
       "key": {
@@ -149,29 +253,6 @@ ___SERVER_PERMISSIONS___
           }
         }
       ]
-    },
-    "clientAnnotations": {
-      "isEditedByUser": true
-    },
-    "isRequired": true
-  },
-  {
-    "instance": {
-      "key": {
-        "publicId": "read_container_data",
-        "versionId": "1"
-      },
-      "param": []
-    },
-    "isRequired": true
-  },
-  {
-    "instance": {
-      "key": {
-        "publicId": "set_cookies",
-        "versionId": "1"
-      },
-      "param": []
     },
     "clientAnnotations": {
       "isEditedByUser": true
@@ -202,27 +283,6 @@ ___SERVER_PERMISSIONS___
   {
     "instance": {
       "key": {
-        "publicId": "send_pixel_from_browser",
-        "versionId": "1"
-      },
-      "param": [
-        {
-          "key": "allowedUrls",
-          "value": {
-            "type": 1,
-            "string": "specific"
-          }
-        }
-      ]
-    },
-    "clientAnnotations": {
-      "isEditedByUser": true
-    },
-    "isRequired": true
-  },
-  {
-    "instance": {
-      "key": {
         "publicId": "send_http",
         "versionId": "1"
       },
@@ -241,7 +301,11 @@ ___SERVER_PERMISSIONS___
             "listItem": [
               {
                 "type": 1,
-                "string": "https://api.axept.io/v1/*"
+                "string": "https://*.axept.io/*"
+              },
+              {
+                "type": 1,
+                "string": "https://*.axeptio.eu/*"
               }
             ]
           }
@@ -306,7 +370,7 @@ ___SERVER_PERMISSIONS___
           "key": "writeHeaderAccess",
           "value": {
             "type": 1,
-            "string": "specific"
+            "string": "any"
           }
         }
       ]
