@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.1](https://github.com/axeptio/axeptio-sgtm-public-template/compare/v1.1.0...v1.1.1) (2026-05-30)
+
+
+### Bug Fixes
+
+* **test:** tighten deepEqual key-set check in template test runner ([ac58c79](https://github.com/axeptio/axeptio-sgtm-public-template/commit/ac58c79775f1d66f48ff2aa4bbf1a3380b2b5dba))
+
 ## [1.1.0](https://github.com/axeptio/axeptio-sgtm-public-template/compare/v1.0.1...v1.1.0) (2026-05-30)
 
 
