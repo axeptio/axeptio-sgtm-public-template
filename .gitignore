@@ -1,0 +1,3 @@
+# Node tooling for the template test suite (the template itself ships no JS deps)
+node_modules/
+npm-debug.log*
