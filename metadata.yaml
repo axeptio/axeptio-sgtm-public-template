@@ -20,3 +20,11 @@ versions:
   - sha: a299456826a01e4db72e593ed01c35fe7cd000cd
     changeNotes: |-
       - **ci:** use .mjs commitlint config required by commitlint action
+  - sha: 206848857b6924edce02f9e8d1ee2aea279c09aa
+    changeNotes: |-
+      - full proxyBaseUrl reverse proxy for all Axeptio origins
+      - address Copilot review on proxy template
+      - address Copilot round 2 on proxy template
+      - address Copilot round 3 on proxy template
+      - address Copilot round 4 on proxy template
+      - address Copilot round 5 on proxy template
