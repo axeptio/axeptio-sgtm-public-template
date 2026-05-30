@@ -22,6 +22,26 @@ use GitHub pull requests for this purpose. Consult
 [GitHub Help](https://help.github.com/articles/about-pull-requests/) for more
 information on using pull requests.
 
+## Testing the template
+
+The tag's routing logic is covered by unit tests written as GTM
+[custom-template test scenarios](https://developers.google.com/tag-platform/tag-manager/templates/tests)
+in the `___TESTS___` section of `template.tpl`. They are the single source of
+truth — runnable both in the GTM UI **Tests** tab and headlessly:
+
+```
+npm ci      # one-time, installs the js-yaml dev dependency
+npm test    # runs every ___TESTS___ scenario against the real template source
+```
+
+`test/run-tpl-tests.mjs` shims GTM's Test API (`runCode` / `mock` / `assertApi` /
+`assertThat`) and executes the actual `___SANDBOXED_JS_FOR_SERVER___` code under
+Node's built-in test runner, so a change that breaks routing fails the suite. Add
+or update a scenario in `___TESTS___` whenever you change the tag's behaviour.
+
+A CI check (`Test template`) runs `npm test` on every pull request and **must
+pass before merging** (add it to the branch's required status checks).
+
 ## Commit & pull request conventions
 
 This project uses [Conventional Commits](https://www.conventionalcommits.org/)
