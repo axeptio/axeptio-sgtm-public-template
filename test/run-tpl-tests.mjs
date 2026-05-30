@@ -96,7 +96,9 @@ function deepEqual(a, b) {
   const ka = Object.keys(a);
   const kb = Object.keys(b);
   if (ka.length !== kb.length) return false;
-  return ka.every((k) => deepEqual(a[k], b[k]));
+  // Require b to own every key of a; with equal key counts this guarantees the
+  // key sets are identical, so {a: undefined} no longer matches {b: 1}.
+  return ka.every((k) => Object.prototype.hasOwnProperty.call(b, k) && deepEqual(a[k], b[k]));
 }
 
 // --- Per-scenario GTM Test API. -----------------------------------------------
