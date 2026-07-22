@@ -1,5 +1,18 @@
 # Changelog
 
+## [1.2.1](https://github.com/axeptio/axeptio-sgtm-public-template/compare/v1.2.0...v1.2.1) (2026-07-22)
+
+
+### Bug Fixes
+
+* **template:** source request path/query/body from request APIs ([e38fd6b](https://github.com/axeptio/axeptio-sgtm-public-template/commit/e38fd6b55a8e4a035e9ccc9890b07e1c6bd052e0))
+* **template:** source request path/query/body from request APIs ([f4c373c](https://github.com/axeptio/axeptio-sgtm-public-template/commit/f4c373c9d5379efb3575a4d06c5a6d76b5ec2e7d))
+
+
+### Documentation
+
+* **template:** fix harness comment on unmocked request APIs ([f395c51](https://github.com/axeptio/axeptio-sgtm-public-template/commit/f395c510139ac334511ba2b2e847f5b2226b34a8))
+
 ## [1.2.0](https://github.com/axeptio/axeptio-sgtm-public-template/compare/v1.1.1...v1.2.0) (2026-07-22)
 
 
