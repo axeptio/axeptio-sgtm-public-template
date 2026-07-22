@@ -1,6 +1,8 @@
 #!/usr/bin/env node
-// Appends a new entry to the `versions:` list in metadata.yaml so the GTM
+// Prepends a new entry to the `versions:` list in metadata.yaml so the GTM
 // Community Template Gallery version history stays in sync with releases.
+// The gallery requires reverse chronological order (most recent version
+// first), so new entries go directly under the `versions:` key.
 //
 // Invoked by .github/workflows/release-please.yml after a release is published.
 // Inputs (environment):
@@ -64,7 +66,7 @@ function buildChangeNotes() {
   return lines.join('\n');
 }
 
-// --- Append the new version entry to metadata.yaml -------------------------
+// --- Prepend the new version entry to metadata.yaml ------------------------
 
 let metadata = readFileSync(METADATA_PATH, 'utf8');
 
@@ -73,7 +75,8 @@ if (metadata.includes(sha)) {
   process.exit(0);
 }
 
-if (!/\n?versions:\s*\n/.test(metadata) && !/\nversions:\s*$/.test(metadata)) {
+const versionsKey = metadata.match(/^versions:[ \t]*\r?\n/m);
+if (!versionsKey) {
   console.error('Could not find a `versions:` key in metadata.yaml.');
   process.exit(1);
 }
@@ -92,5 +95,7 @@ const notesBlock = changeNotes
 
 const entry = `  - sha: ${sha}\n    changeNotes: |-\n${notesBlock}\n`;
 
-writeFileSync(METADATA_PATH, metadata + entry, 'utf8');
-console.log(`Appended ${tag} (${sha}) to ${METADATA_PATH}.`);
+// Insert directly under `versions:` so the newest release is listed first.
+const insertAt = versionsKey.index + versionsKey[0].length;
+writeFileSync(METADATA_PATH, metadata.slice(0, insertAt) + entry + metadata.slice(insertAt), 'utf8');
+console.log(`Prepended ${tag} (${sha}) to ${METADATA_PATH}.`);
