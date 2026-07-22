@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.2.0](https://github.com/axeptio/axeptio-sgtm-public-template/compare/v1.1.1...v1.2.0) (2026-07-22)
+
+
+### Features
+
+* replace Apache 2.0 with Axeptio license notice (from v1.2.0) ([7482865](https://github.com/axeptio/axeptio-sgtm-public-template/commit/7482865cbdb297ac8b30bd89e3bbe9492b9ce437))
+* replace Apache 2.0 with Axeptio license notice (from v1.2.0) ([e9ed1c6](https://github.com/axeptio/axeptio-sgtm-public-template/commit/e9ed1c626fd3e047769c9259e4bc9e5fb5f95cf5))
+
 ## [1.1.1](https://github.com/axeptio/axeptio-sgtm-public-template/compare/v1.1.0...v1.1.1) (2026-05-30)
 
 
