@@ -110,7 +110,7 @@ function buildTestApi() {
 
   // require() inside the template: a mock wins, else a cached tracked spy. A bare
   // spy returns undefined, which is the correct default for the response-writing
-  // APIs and for getRequestHeader (header absent). getAllEventData/getRequestMethod
+  // APIs and for getRequestHeader (header absent). getRequestPath/getRequestMethod
   // must be mocked by the scenario or the template throws — a clear failure.
   const requireShim = (name) => {
     if (name in mocks) return mocks[name];
