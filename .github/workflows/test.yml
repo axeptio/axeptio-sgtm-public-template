@@ -27,3 +27,8 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm test
+      # Hermetic integration suite: real sandboxed JS over real HTTP against a
+      # local mock of the Axeptio upstreams (127.0.0.1 only, no egress). Covers
+      # byte-identical binary relay, header allowlist/strip behavior and
+      # status/error semantics that the mocked ___TESTS___ scenarios cannot.
+      - run: npm run integration
