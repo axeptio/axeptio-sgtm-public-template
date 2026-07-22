@@ -61,8 +61,10 @@ const args = process.argv.slice(2);
 const dryRun = args.includes('--dry-run');
 const rollbackIdx = args.indexOf('--rollback');
 const rollbackVersionId = rollbackIdx !== -1 ? args[rollbackIdx + 1] : null;
-if (rollbackIdx !== -1 && !rollbackVersionId) {
-  fail('--rollback requires a container version id, e.g. --rollback 42');
+if (rollbackIdx !== -1 && !/^\d+$/.test(rollbackVersionId || '')) {
+  // Reject a missing id or the next flag (e.g. `--rollback --dry-run`) up front,
+  // rather than letting it become a confusing API 404.
+  fail('--rollback requires a numeric container version id, e.g. --rollback 42');
 }
 
 const accountId = requireEnv('GTM_ACCOUNT_ID');
@@ -224,12 +226,20 @@ async function main() {
   const workspacePath = workspace.path;
   console.log(`Created ephemeral workspace ${workspace.workspaceId}`);
 
-  // Always try to clean the workspace up, even on an error path.
+  // Always try to clean the workspace up, even on an error path. A successful
+  // create_version consumes the workspace, so a 404 here is expected and benign
+  // — tolerate it silently and only warn on a genuine cleanup failure.
   let workspaceLives = true;
   const deleteWorkspace = async () => {
     if (!workspaceLives) return;
     workspaceLives = false;
-    await api('DELETE', workspacePath).catch((e) => console.warn(`  workspace cleanup: ${e.message}`));
+    try {
+      await api('DELETE', workspacePath);
+    } catch (err) {
+      if (!(err instanceof ApiError && err.status === 404)) {
+        console.warn(`  workspace cleanup: ${err.message}`);
+      }
+    }
   };
 
   try {
@@ -276,14 +286,17 @@ async function main() {
     if (!version?.containerVersionId) {
       throw new Error('create_version returned no container version; nothing to publish.');
     }
-    // create_version consumes the workspace on success.
-    workspaceLives = false;
     console.log(`Created container version ${version.containerVersionId}`);
 
     await api('POST', `${containerPath}/versions/${version.containerVersionId}:publish`, {
       query: { fingerprint: version.fingerprint },
     });
     console.log(`Published version ${version.containerVersionId} to the staging container.`);
+
+    // create_version usually consumes the workspace, but don't rely on it:
+    // attempt the delete regardless (a 404 is tolerated) so a workspace can
+    // never leak if that behavior ever changes.
+    await deleteWorkspace();
 
     setOutput('changed', 'true');
     setOutput('published_version', version.containerVersionId);
