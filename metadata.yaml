@@ -10,12 +10,18 @@
 
 homepage: "https://www.example.com"
 documentation: "https://www.example.com/documentation"
+# The gallery requires reverse chronological order: most recent version first.
 versions:
-  - sha: f311fd0a2da4911824ff9dfd435805ec89d083a4
-    changeNotes: Initial Version
-  - sha: a299456826a01e4db72e593ed01c35fe7cd000cd
+  - sha: 17a9426122c9c0106c891dc24366c578a0941198
     changeNotes: |-
-      - **ci:** use .mjs commitlint config required by commitlint action
+      - **template:** source request path/query/body from request APIs
+      - **template:** fix harness comment on unmocked request APIs
+  - sha: 0c5811dde913854007afdab6e0ce25a8871aff53
+    changeNotes: |-
+      - replace Apache 2.0 with Axeptio license notice (from v1.2.0)
+  - sha: 6557523481fedee9b30a87e4096a7ec08e7f99bd
+    changeNotes: |-
+      - **test:** tighten deepEqual key-set check in template test runner
   - sha: 206848857b6924edce02f9e8d1ee2aea279c09aa
     changeNotes: |-
       - full proxyBaseUrl reverse proxy for all Axeptio origins
@@ -24,14 +30,8 @@ versions:
       - address Copilot round 3 on proxy template
       - address Copilot round 4 on proxy template
       - address Copilot round 5 on proxy template
-  - sha: 6557523481fedee9b30a87e4096a7ec08e7f99bd
+  - sha: a299456826a01e4db72e593ed01c35fe7cd000cd
     changeNotes: |-
-      - **test:** tighten deepEqual key-set check in template test runner
-  - sha: 0c5811dde913854007afdab6e0ce25a8871aff53
-    changeNotes: |-
-      - replace Apache 2.0 with Axeptio license notice (from v1.2.0)
-  - sha: 17a9426122c9c0106c891dc24366c578a0941198
-    changeNotes: |-
-      - **template:** source request path/query/body from request APIs
-      - **template:** source request path/query/body from request APIs
-      - **template:** fix harness comment on unmocked request APIs
+      - **ci:** use .mjs commitlint config required by commitlint action
+  - sha: f311fd0a2da4911824ff9dfd435805ec89d083a4
+    changeNotes: Initial Version
