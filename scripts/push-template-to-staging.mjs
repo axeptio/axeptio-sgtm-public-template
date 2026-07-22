@@ -71,6 +71,9 @@ const templateName = process.env.GTM_TEMPLATE_NAME?.trim() || 'Axeptio CMP';
 const sha = (process.env.GITHUB_SHA || 'local').slice(0, 7);
 const versionName = process.env.GTM_VERSION_NAME?.trim() || `ci ${sha}`;
 const minIntervalMs = Number(process.env.GTM_API_MIN_INTERVAL_MS || 4000);
+if (!Number.isFinite(minIntervalMs) || minIntervalMs < 0) {
+  fail('GTM_API_MIN_INTERVAL_MS must be a non-negative number.');
+}
 
 const containerPath = `accounts/${accountId}/containers/${containerId}`;
 
@@ -128,6 +131,10 @@ async function api(method, path, { query, body } = {}) {
     lastCallAt = Date.now();
 
     const { token } = await client.getAccessToken();
+    // Fail fast rather than sending "Authorization: Bearer undefined", which
+    // turns a credential problem into an opaque 401. Throw (not fail) so the
+    // caller's cleanup runs.
+    if (!token) throw new Error('ADC returned no access token; check credentials and scopes.');
     const res = await fetch(url, {
       method,
       headers: {
@@ -185,10 +192,15 @@ async function findTemplate(workspacePath) {
 
 async function rollback() {
   console.log(`Rollback: re-publishing container version ${rollbackVersionId}`);
+  // Emit the same output set as the default flow so downstream steps behave
+  // consistently across modes.
+  const previousLiveVersion = await getLiveVersionId();
+  setOutput('previous_live_version', previousLiveVersion ?? '');
   const version = await api('GET', `${containerPath}/versions/${rollbackVersionId}`);
   await api('POST', `${containerPath}/versions/${rollbackVersionId}:publish`, {
     query: { fingerprint: version.fingerprint },
   });
+  setOutput('changed', 'true');
   setOutput('published_version', rollbackVersionId);
   console.log(`Rollback complete: version ${rollbackVersionId} is now live.`);
 }
@@ -233,7 +245,9 @@ async function main() {
     if (dryRun) {
       console.log('[dry-run] Template differs; a real run would update, version and publish.');
       await deleteWorkspace();
-      setOutput('changed', 'false');
+      // changed=true reflects "a publish would happen" — consistent with the
+      // log and with the no-op branch above, which reports changed=false.
+      setOutput('changed', 'true');
       return;
     }
 
