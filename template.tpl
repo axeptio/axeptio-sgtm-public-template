@@ -56,7 +56,9 @@ ___TEMPLATE_PARAMETERS___
 
 ___SANDBOXED_JS_FOR_SERVER___
 
-const getAllEventData = require('getAllEventData');
+const getRequestPath = require('getRequestPath');
+const getRequestQueryString = require('getRequestQueryString');
+const getRequestBody = require('getRequestBody');
 const sendHttpRequest = require('sendHttpRequest');
 const getRequestHeader = require('getRequestHeader');
 const getRequestMethod = require('getRequestMethod');
@@ -65,8 +67,6 @@ const setResponseStatus = require('setResponseStatus');
 const setResponseBody = require('setResponseBody');
 const setResponseHeader = require('setResponseHeader');
 const returnResponse = require('returnResponse');
-
-const eventData = getAllEventData();
 
 const requestHeaders = {};
 
@@ -110,7 +110,7 @@ headerNames.forEach((headerName) => {
 });
 
 
-const requestBody = eventData.requestBody;
+const requestBody = getRequestBody();
 
 // proxyBaseUrl namespace -> upstream Axeptio origin. Most specific prefixes
 // first so '/static-eu/' is never shadowed by '/static/'.
@@ -141,7 +141,7 @@ const droppedResponseHeaders = {
 // Strip the configured proxy base path (e.g. '/axeptio') before matching.
 // Normalize to a leading slash and no trailing slash, then strip only on a
 // path boundary so '/axeptio' never mis-strips '/axeptiofoo/...'.
-let path = eventData.path;
+let path = getRequestPath() || '/';
 let basePath = data.proxyBasePath || '';
 if (basePath) {
   if (basePath.indexOf('/') !== 0) {
@@ -164,10 +164,10 @@ if (basePath) {
   }
 }
 
-// Preserve the original query string from the full request path.
-const fullRequestPath = eventData.requestPath || path;
-const queryIndex = fullRequestPath.indexOf('?');
-const queryString = queryIndex >= 0 ? fullRequestPath.substring(queryIndex) : '';
+// Preserve the original query string. getRequestQueryString() returns the query
+// without a leading '?', or '' when there is none.
+const rawQuery = getRequestQueryString();
+const queryString = rawQuery ? '?' + rawQuery : '';
 
 // Preserve the original HTTP method via the read_request lifecycle API
 // (getRequestMethod needs no permission). It is authoritative for the incoming
@@ -250,27 +250,6 @@ ___SERVER_PERMISSIONS___
           "value": {
             "type": 1,
             "string": "debug"
-          }
-        }
-      ]
-    },
-    "clientAnnotations": {
-      "isEditedByUser": true
-    },
-    "isRequired": true
-  },
-  {
-    "instance": {
-      "key": {
-        "publicId": "read_event_data",
-        "versionId": "1"
-      },
-      "param": [
-        {
-          "key": "eventDataAccess",
-          "value": {
-            "type": 1,
-            "string": "any"
           }
         }
       ]
@@ -397,8 +376,10 @@ ___TESTS___
 
 setup: |-
   let sent;
-  function mockRequest(path, requestPath, method) {
-    mock('getAllEventData', () => ({ path: path, requestPath: requestPath, requestBody: 'BODY' }));
+  function mockRequest(path, method) {
+    mock('getRequestPath', () => path);
+    mock('getRequestQueryString', () => '');
+    mock('getRequestBody', () => 'BODY');
     mock('getRequestMethod', () => method);
   }
   function mockUpstream(response) {
@@ -414,7 +395,7 @@ setup: |-
 scenarios:
 - name: 'api v1 consent POST is forwarded to api axept io method and body preserved'
   code: |-
-    mockRequest('/api/v1/app/consents', '/api/v1/app/consents', 'POST');
+    mockRequest('/api/v1/app/consents', 'POST');
     mockUpstream({ statusCode: 200, body: 'OK', headers: {} });
     runCode({ proxyBasePath: '' });
     assertThat(sent.url).isEqualTo('https://api.axept.io/v1/app/consents');
@@ -426,7 +407,7 @@ scenarios:
     assertApi('gtmOnFailure').wasNotCalled();
 - name: 'static asset GET is forwarded to static axept io'
   code: |-
-    mockRequest('/static/foo.js', '/static/foo.js', 'GET');
+    mockRequest('/static/foo.js', 'GET');
     mockUpstream({ statusCode: 200, body: 'x', headers: {} });
     runCode({ proxyBasePath: '' });
     assertThat(sent.url).isEqualTo('https://static.axept.io/foo.js');
@@ -434,56 +415,57 @@ scenarios:
     assertApi('gtmOnSuccess').wasCalled();
 - name: 'client config GET is forwarded to client axept io'
   code: |-
-    mockRequest('/client/config.json', '/client/config.json', 'GET');
+    mockRequest('/client/config.json', 'GET');
     mockUpstream({ statusCode: 200, body: 'x', headers: {} });
     runCode({ proxyBasePath: '' });
     assertThat(sent.url).isEqualTo('https://client.axept.io/config.json');
 - name: 'favicon GET is forwarded to favicons axept io'
   code: |-
-    mockRequest('/favicons/x.png', '/favicons/x.png', 'GET');
+    mockRequest('/favicons/x.png', 'GET');
     mockUpstream({ statusCode: 200, body: 'x', headers: {} });
     runCode({ proxyBasePath: '' });
     assertThat(sent.url).isEqualTo('https://favicons.axept.io/x.png');
 - name: 'font GET is forwarded to fonts axept io'
   code: |-
-    mockRequest('/fonts/x.woff2', '/fonts/x.woff2', 'GET');
+    mockRequest('/fonts/x.woff2', 'GET');
     mockUpstream({ statusCode: 200, body: 'x', headers: {} });
     runCode({ proxyBasePath: '' });
     assertThat(sent.url).isEqualTo('https://fonts.axept.io/x.woff2');
 - name: 'static-eu is routed to static axeptio eu and not shadowed by the static path'
   code: |-
-    mockRequest('/static-eu/app.js', '/static-eu/app.js', 'GET');
+    mockRequest('/static-eu/app.js', 'GET');
     mockUpstream({ statusCode: 200, body: 'x', headers: {} });
     runCode({ proxyBasePath: '' });
     assertThat(sent.url).isEqualTo('https://static.axeptio.eu/app.js');
 - name: 'proxy base path is stripped before route matching'
   code: |-
-    mockRequest('/axeptio/api/v1/app', '/axeptio/api/v1/app', 'POST');
+    mockRequest('/axeptio/api/v1/app', 'POST');
     mockUpstream({ statusCode: 200, body: 'x', headers: {} });
     runCode({ proxyBasePath: '/axeptio' });
     assertThat(sent.url).isEqualTo('https://api.axept.io/v1/app');
 - name: 'base path is not mis-stripped on a non-boundary prefix axeptiofoo'
   code: |-
-    mockRequest('/axeptiofoo/api/v1/app', '/axeptiofoo/api/v1/app', 'GET');
+    mockRequest('/axeptiofoo/api/v1/app', 'GET');
     runCode({ proxyBasePath: '/axeptio' });
     assertApi('sendHttpRequest').wasNotCalled();
     assertApi('setResponseStatus').wasCalledWith(404);
     assertApi('gtmOnFailure').wasCalled();
 - name: 'query string is preserved on the forwarded URL'
   code: |-
-    mockRequest('/api/v1/app', '/api/v1/app?clientId=abc&v=1', 'GET');
+    mockRequest('/api/v1/app', 'GET');
+    mock('getRequestQueryString', () => 'clientId=abc&v=1');
     mockUpstream({ statusCode: 200, body: 'x', headers: {} });
     runCode({ proxyBasePath: '' });
     assertThat(sent.url).isEqualTo('https://api.axept.io/v1/app?clientId=abc&v=1');
 - name: 'legacy consents alias is forwarded to api axept io v1 app consents'
   code: |-
-    mockRequest('/consents', '/consents', 'POST');
+    mockRequest('/consents', 'POST');
     mockUpstream({ statusCode: 200, body: 'x', headers: {} });
     runCode({ proxyBasePath: '' });
     assertThat(sent.url).isEqualTo('https://api.axept.io/v1/app/consents');
 - name: 'a 3xx upstream status is relayed verbatim and counts as success'
   code: |-
-    mockRequest('/client/config.json', '/client/config.json', 'GET');
+    mockRequest('/client/config.json', 'GET');
     mockUpstream({ statusCode: 302, body: '', headers: {} });
     runCode({ proxyBasePath: '' });
     assertApi('setResponseStatus').wasCalledWith(302);
@@ -491,7 +473,7 @@ scenarios:
     assertApi('gtmOnFailure').wasNotCalled();
 - name: 'a 5xx upstream status is relayed verbatim and counts as failure'
   code: |-
-    mockRequest('/api/v1/app', '/api/v1/app', 'GET');
+    mockRequest('/api/v1/app', 'GET');
     mockUpstream({ statusCode: 500, body: 'err', headers: {} });
     runCode({ proxyBasePath: '' });
     assertApi('setResponseStatus').wasCalledWith(500);
@@ -499,7 +481,7 @@ scenarios:
     assertApi('gtmOnSuccess').wasNotCalled();
 - name: 'an upstream network error returns a deterministic 502'
   code: |-
-    mockRequest('/api/v1/app', '/api/v1/app', 'GET');
+    mockRequest('/api/v1/app', 'GET');
     mockUpstreamError();
     runCode({ proxyBasePath: '' });
     assertApi('setResponseStatus').wasCalledWith(502);
@@ -507,7 +489,7 @@ scenarios:
     assertApi('gtmOnFailure').wasCalled();
 - name: 'an unmatched path returns 404 and does not call upstream'
   code: |-
-    mockRequest('/random', '/random', 'GET');
+    mockRequest('/random', 'GET');
     runCode({ proxyBasePath: '' });
     assertApi('sendHttpRequest').wasNotCalled();
     assertApi('setResponseStatus').wasCalledWith(404);
@@ -516,7 +498,7 @@ scenarios:
 - name: 'hop-by-hop response headers are dropped while normal headers are relayed'
   code: |-
     let headersSet = {};
-    mockRequest('/static/a.css', '/static/a.css', 'GET');
+    mockRequest('/static/a.css', 'GET');
     sent = undefined;
     mock('sendHttpRequest', (url, opts, body) => {
       return Promise.create((resolve) => resolve({

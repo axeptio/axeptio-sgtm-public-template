@@ -110,8 +110,9 @@ function buildTestApi() {
 
   // require() inside the template: a mock wins, else a cached tracked spy. A bare
   // spy returns undefined, which is the correct default for the response-writing
-  // APIs and for getRequestHeader (header absent). getAllEventData/getRequestMethod
-  // must be mocked by the scenario or the template throws — a clear failure.
+  // APIs and for getRequestHeader (header absent). Unmocked getRequestPath() and
+  // getRequestMethod() fall back to '/' and 'GET', so a missing path mock routes
+  // to a 404 rather than throwing; scenarios mock getRequestPath to drive routing.
   const requireShim = (name) => {
     if (name in mocks) return mocks[name];
     if (name === 'logToConsole') return (apiSpies[name] = apiSpies[name] || spy());
