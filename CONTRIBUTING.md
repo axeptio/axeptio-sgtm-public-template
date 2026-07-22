@@ -35,8 +35,22 @@ npm test    # runs every ___TESTS___ scenario against the real template source
 Node's built-in test runner, so a change that breaks routing fails the suite. Add
 or update a scenario in `___TESTS___` whenever you change the tag's behaviour.
 
-A CI check (`Test template`) runs `npm test` on every pull request and **must
-pass before merging** (add it to the branch's required status checks).
+Beyond the mocked scenarios, a hermetic integration suite runs the same real
+sandboxed source over real HTTP against a local mock of the Axeptio upstreams
+(binds `127.0.0.1` only — no network egress):
+
+```
+npm run integration   # byte-identical binary relay, header allowlist/strip,
+                      # status/error relay, base-path stripping over the wire
+```
+
+See `integration/lib/gtm-runtime.mjs` for its fidelity contract: it complements
+the live e2e suite (`npm run e2e`), which remains the only proof of end-to-end
+binary integrity on a real tagging server.
+
+A CI check (`Test template`) runs `npm test` and `npm run integration` on every
+pull request and **must pass before merging** (add it to the branch's required
+status checks).
 
 ## Commit & pull request conventions
 

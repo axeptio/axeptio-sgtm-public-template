@@ -10,35 +10,17 @@
 // It runs the REAL sandboxed source extracted from template.tpl (never a copy), so
 // a regression in the template's routing makes a scenario fail here.
 
-import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import vm from 'node:vm';
 import { test } from 'node:test';
-import yaml from 'js-yaml';
+import { loadTemplate, spy, deepEqual } from '../lib/template.mjs';
 
 const TPL_PATH = join(dirname(fileURLToPath(import.meta.url)), '..', 'template.tpl');
 
-// --- Parse the .tpl into its ___SECTION___ blocks. ----------------------------
-function parseTemplate(src) {
-  const names = src.match(/___[A-Z_]+___/g) || [];
-  const chunks = src.split(/___[A-Z_]+___/);
-  const sections = {};
-  names.forEach((name, i) => {
-    sections[name] = chunks[i + 1].trim();
-  });
-  return sections;
-}
-
-const sections = parseTemplate(readFileSync(TPL_PATH, 'utf8'));
-const sandboxSource = sections.___SANDBOXED_JS_FOR_SERVER___;
-const parsedTests = yaml.load(sections.___TESTS___ || '') || {};
+const { sandboxSource, tests: parsedTests } = loadTemplate(TPL_PATH);
 const scenarios = parsedTests.scenarios || [];
 const sharedSetup = parsedTests.setup || '';
-
-if (!sandboxSource) {
-  throw new Error('Could not extract ___SANDBOXED_JS_FOR_SERVER___ from template.tpl');
-}
 
 // --- Synchronous promise. -----------------------------------------------------
 // GTM resolves a mocked sendHttpRequest()'s promise synchronously inside runCode,
@@ -78,27 +60,6 @@ class SyncPromise {
     }
   }
   catch(onRejected) { return this.then(undefined, onRejected); }
-}
-
-// --- Spies. -------------------------------------------------------------------
-function spy(impl) {
-  const fn = (...args) => {
-    fn.calls.push(args);
-    return typeof impl === 'function' ? impl(...args) : undefined;
-  };
-  fn.calls = [];
-  return fn;
-}
-
-function deepEqual(a, b) {
-  if (a === b) return true;
-  if (typeof a !== 'object' || typeof b !== 'object' || a === null || b === null) return false;
-  const ka = Object.keys(a);
-  const kb = Object.keys(b);
-  if (ka.length !== kb.length) return false;
-  // Require b to own every key of a; with equal key counts this guarantees the
-  // key sets are identical, so {a: undefined} no longer matches {b: 1}.
-  return ka.every((k) => Object.prototype.hasOwnProperty.call(b, k) && deepEqual(a[k], b[k]));
 }
 
 // --- Per-scenario GTM Test API. -----------------------------------------------
