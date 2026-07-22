@@ -30,3 +30,8 @@ versions:
   - sha: 0c5811dde913854007afdab6e0ce25a8871aff53
     changeNotes: |-
       - replace Apache 2.0 with Axeptio license notice (from v1.2.0)
+  - sha: 17a9426122c9c0106c891dc24366c578a0941198
+    changeNotes: |-
+      - **template:** source request path/query/body from request APIs
+      - **template:** source request path/query/body from request APIs
+      - **template:** fix harness comment on unmocked request APIs
