@@ -203,6 +203,27 @@ if (scenarios.length === 0) {
   });
 }
 
+// --- Guard: GTM test-name legality. -------------------------------------------
+// GTM's Custom Template editor validates each ___TESTS___ scenario name and
+// rejects punctuation (e.g. "."), which silently blocks saving template.tpl in
+// the GTM UI. Catch it here in CI instead. Allowlist known-safe characters
+// rather than blocklisting, since GTM's full rejected set is undocumented.
+const GTM_SAFE_NAME = /^[A-Za-z0-9 _-]+$/;
+
+test('all scenario names are GTM-legal', () => {
+  // Self-check: the guard must actually reject the characters we care about.
+  for (const bad of ['has.dot', 'a/b', 'a,b', 'a(b)']) {
+    if (GTM_SAFE_NAME.test(bad)) throw new Error(`guard is too permissive: accepted "${bad}"`);
+  }
+  const illegal = scenarios.map((s) => s.name).filter((name) => !GTM_SAFE_NAME.test(name));
+  if (illegal.length > 0) {
+    throw new Error(
+      'These test names contain characters GTM rejects (use letters, numbers, ' +
+      `spaces, hyphens, underscores only):\n  ${illegal.join('\n  ')}`,
+    );
+  }
+});
+
 for (const scenario of scenarios) {
   test(scenario.name, () => {
     const api = buildTestApi();
