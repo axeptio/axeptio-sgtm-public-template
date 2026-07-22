@@ -75,13 +75,15 @@ if (metadata.includes(sha)) {
   process.exit(0);
 }
 
+// Normalize before matching so a file ending exactly at `versions:` (no
+// trailing newline) still matches and gets its entry inserted below the key.
+if (!metadata.endsWith('\n')) metadata += '\n';
+
 const versionsKey = metadata.match(/^versions:[ \t]*\r?\n/m);
 if (!versionsKey) {
   console.error('Could not find a `versions:` key in metadata.yaml.');
   process.exit(1);
 }
-
-if (!metadata.endsWith('\n')) metadata += '\n';
 
 const changeNotes = buildChangeNotes();
 
