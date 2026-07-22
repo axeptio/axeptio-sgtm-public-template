@@ -9,6 +9,7 @@
     "e2e": "node --test e2e/proxy-e2e.mjs"
   },
   "devDependencies": {
+    "google-auth-library": "^10.9.0",
     "js-yaml": "^4.1.0"
   },
   "license": "SEE LICENSE IN LICENSE"
