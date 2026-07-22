@@ -412,7 +412,7 @@ setup: |-
     mock('sendHttpRequest', () => Promise.create((resolve, reject) => reject('network')));
   }
 scenarios:
-- name: 'api/v1 consent POST is forwarded to api.axept.io, method and body preserved'
+- name: 'api v1 consent POST is forwarded to api axept io method and body preserved'
   code: |-
     mockRequest('/api/v1/app/consents', '/api/v1/app/consents', 'POST');
     mockUpstream({ statusCode: 200, body: 'OK', headers: {} });
@@ -424,7 +424,7 @@ scenarios:
     assertApi('returnResponse').wasCalled();
     assertApi('gtmOnSuccess').wasCalled();
     assertApi('gtmOnFailure').wasNotCalled();
-- name: 'static asset GET is forwarded to static.axept.io'
+- name: 'static asset GET is forwarded to static axept io'
   code: |-
     mockRequest('/static/foo.js', '/static/foo.js', 'GET');
     mockUpstream({ statusCode: 200, body: 'x', headers: {} });
@@ -432,25 +432,25 @@ scenarios:
     assertThat(sent.url).isEqualTo('https://static.axept.io/foo.js');
     assertThat(sent.method).isEqualTo('GET');
     assertApi('gtmOnSuccess').wasCalled();
-- name: 'client config GET is forwarded to client.axept.io'
+- name: 'client config GET is forwarded to client axept io'
   code: |-
     mockRequest('/client/config.json', '/client/config.json', 'GET');
     mockUpstream({ statusCode: 200, body: 'x', headers: {} });
     runCode({ proxyBasePath: '' });
     assertThat(sent.url).isEqualTo('https://client.axept.io/config.json');
-- name: 'favicon GET is forwarded to favicons.axept.io'
+- name: 'favicon GET is forwarded to favicons axept io'
   code: |-
     mockRequest('/favicons/x.png', '/favicons/x.png', 'GET');
     mockUpstream({ statusCode: 200, body: 'x', headers: {} });
     runCode({ proxyBasePath: '' });
     assertThat(sent.url).isEqualTo('https://favicons.axept.io/x.png');
-- name: 'font GET is forwarded to fonts.axept.io'
+- name: 'font GET is forwarded to fonts axept io'
   code: |-
     mockRequest('/fonts/x.woff2', '/fonts/x.woff2', 'GET');
     mockUpstream({ statusCode: 200, body: 'x', headers: {} });
     runCode({ proxyBasePath: '' });
     assertThat(sent.url).isEqualTo('https://fonts.axept.io/x.woff2');
-- name: 'static-eu is routed to static.axeptio.eu and not shadowed by /static/'
+- name: 'static-eu is routed to static axeptio eu and not shadowed by the static path'
   code: |-
     mockRequest('/static-eu/app.js', '/static-eu/app.js', 'GET');
     mockUpstream({ statusCode: 200, body: 'x', headers: {} });
@@ -462,7 +462,7 @@ scenarios:
     mockUpstream({ statusCode: 200, body: 'x', headers: {} });
     runCode({ proxyBasePath: '/axeptio' });
     assertThat(sent.url).isEqualTo('https://api.axept.io/v1/app');
-- name: 'base path is not mis-stripped on a non-boundary prefix (/axeptiofoo)'
+- name: 'base path is not mis-stripped on a non-boundary prefix axeptiofoo'
   code: |-
     mockRequest('/axeptiofoo/api/v1/app', '/axeptiofoo/api/v1/app', 'GET');
     runCode({ proxyBasePath: '/axeptio' });
@@ -475,7 +475,7 @@ scenarios:
     mockUpstream({ statusCode: 200, body: 'x', headers: {} });
     runCode({ proxyBasePath: '' });
     assertThat(sent.url).isEqualTo('https://api.axept.io/v1/app?clientId=abc&v=1');
-- name: 'legacy /consents alias is forwarded to api.axept.io/v1/app/consents'
+- name: 'legacy consents alias is forwarded to api axept io v1 app consents'
   code: |-
     mockRequest('/consents', '/consents', 'POST');
     mockUpstream({ statusCode: 200, body: 'x', headers: {} });
