@@ -12,6 +12,12 @@ homepage: "https://www.example.com"
 documentation: "https://www.example.com/documentation"
 # The gallery requires reverse chronological order: most recent version first.
 versions:
+  - sha: d0e61ae06c75c1b2d263ec3b038febbd7c42f1f6
+    changeNotes: |-
+      - **ci:** add Tag Manager API staging push script
+      - **ci:** add Tag Manager API staging push script
+      - **ci:** address copilot review round 1 on staging push script
+      - **ci:** address copilot review round 2 on staging push script
   - sha: 17a9426122c9c0106c891dc24366c578a0941198
     changeNotes: |-
       - **template:** source request path/query/body from request APIs
