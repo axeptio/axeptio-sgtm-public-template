@@ -1,5 +1,19 @@
 # Changelog
 
+## [1.3.0](https://github.com/axeptio/axeptio-sgtm-public-template/compare/v1.2.1...v1.3.0) (2026-07-22)
+
+
+### Features
+
+* **ci:** add Tag Manager API staging push script ([b313c77](https://github.com/axeptio/axeptio-sgtm-public-template/commit/b313c7780dc5436c22bac5ca5bcc0bbaf5544782))
+* **ci:** add Tag Manager API staging push script ([f385769](https://github.com/axeptio/axeptio-sgtm-public-template/commit/f385769121d9917cfb6127dd6aee0caf4cf404ee))
+
+
+### Bug Fixes
+
+* **ci:** address copilot review round 1 on staging push script ([6ab30b2](https://github.com/axeptio/axeptio-sgtm-public-template/commit/6ab30b2dd6f0c07066710c594b873ca24988f09e))
+* **ci:** address copilot review round 2 on staging push script ([2af2d52](https://github.com/axeptio/axeptio-sgtm-public-template/commit/2af2d52b48486c6078ed8361826f8e6fd93c3015))
+
 ## [1.2.1](https://github.com/axeptio/axeptio-sgtm-public-template/compare/v1.2.0...v1.2.1) (2026-07-22)
 
 
