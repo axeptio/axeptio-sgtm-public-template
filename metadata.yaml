@@ -22,13 +22,16 @@ documentation: "https://support.axeptio.eu/en/"
 # after each release — do not add them by hand.
 versions:
   # Latest version
+  - sha: 5efbc2dd15f496a11514f30960baf9e1351e8beb
+    changeNotes: |-
+      - restore the Apache 2.0 licence required by the GTM Gallery
+  # Older versions
   - sha: d0e61ae06c75c1b2d263ec3b038febbd7c42f1f6
     changeNotes: |-
       - **ci:** add Tag Manager API staging push script
       - **ci:** add Tag Manager API staging push script
       - **ci:** address copilot review round 1 on staging push script
       - **ci:** address copilot review round 2 on staging push script
-  # Older versions
   - sha: 17a9426122c9c0106c891dc24366c578a0941198
     changeNotes: |-
       - **template:** source request path/query/body from request APIs
