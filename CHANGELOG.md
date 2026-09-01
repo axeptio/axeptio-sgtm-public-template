@@ -1,5 +1,13 @@
 # Changelog
 
+## [2.0.1](https://github.com/axeptio/axeptio-sgtm-public-template/compare/v2.0.0...v2.0.1) (2026-09-01)
+
+
+### Bug Fixes
+
+* **metadata:** backfill the v2.0.0 gallery entry ([151f0a6](https://github.com/axeptio/axeptio-sgtm-public-template/commit/151f0a6bb434e1a4cb99e1b137854ad414d1f7d0))
+* **metadata:** backfill the v2.0.0 gallery entry ([96d19d4](https://github.com/axeptio/axeptio-sgtm-public-template/commit/96d19d4ed49c9aea2f40e049cff6f42201ee2384))
+
 ## [2.0.0](https://github.com/axeptio/axeptio-sgtm-public-template/compare/v1.3.0...v2.0.0) (2026-09-01)
 
 
