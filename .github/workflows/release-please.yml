@@ -63,8 +63,19 @@ jobs:
 
           # Skip when every commit is already verified, so a signed branch is
           # not force-pushed (and its checks re-run) on every push to master.
-          signed="$(gh api "repos/$REPO/pulls/$number/commits" \
-            --jq '[.[].commit.verification.verified] | all')"
+          #
+          # --paginate is not optional. Without it gh returns only the first
+          # page (30 commits), so a release PR that has accumulated more than
+          # that — release-please leaves a "Merge branch 'master' into
+          # release-please--…" commit behind on every update — could report
+          # "all signed" off page 1 while an unsigned commit sits on page 2,
+          # skipping the re-sign and leaving the PR blocked. The split is
+          # deliberate: gh's --jq runs per page, so it does the element-wise
+          # projection and the standalone `jq -s` does the aggregate, which
+          # would be wrong per-page. (`--slurp` is not an alternative here —
+          # gh rejects it outright when combined with --jq.)
+          signed="$(gh api "repos/$REPO/pulls/$number/commits" --paginate \
+            --jq '.[].commit.verification.verified' | jq -s 'all')"
           if [ "$signed" = "true" ]; then
             echo "Release PR #${number} is already fully signed."
             exit 0
