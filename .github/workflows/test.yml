@@ -1,10 +1,14 @@
 name: Test template
 
 # Runs the template's ___TESTS___ scenarios headlessly on every PR and on pushes
-# to master. The scenarios live in template.tpl (the same ones runnable in the GTM
-# UI "Tests" tab); test/run-tpl-tests.mjs shims GTM's Test API and executes the
-# real sandboxed source under Node's built-in test runner. This gates the routing
-# logic so regressions can't merge.
+# to develop and master. The scenarios live in template.tpl (the same ones
+# runnable in the GTM UI "Tests" tab); test/run-tpl-tests.mjs shims GTM's Test
+# API and executes the real sandboxed source under Node's built-in test runner.
+# This gates the routing logic so regressions can't merge.
+#
+# Both branches, on purpose: `Run template tests` is a required status check, and
+# a required check that never runs blocks a merge rather than passing it. Feature
+# PRs target develop; the promotion PR targets master.
 on:
   pull_request:
     types: [opened, reopened, synchronize]
