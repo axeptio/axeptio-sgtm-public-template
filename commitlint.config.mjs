@@ -27,7 +27,7 @@ export default {
     'scope-enum': [
       1,
       'always',
-      ['template', 'metadata', 'docs', 'ci', 'deps'],
+      ['template', 'metadata', 'docs', 'ci', 'deps', 'release'],
     ],
   },
 };
