@@ -112,8 +112,8 @@ which imposes requirements on the repository itself — not just on the template
 Google **silently delists the template** a couple of days later, with no notification on the pull
 request and no submission-status page to check.
 
-A CI check, `Validate gallery contract`, runs on every pull request and on pushes to `master`. Run
-it yourself before touching `LICENSE`, `metadata.yaml` or `template.tpl`:
+A CI check, `Validate gallery contract`, runs on every pull request and on pushes to `develop` and
+`master`. Run it yourself before touching `LICENSE`, `metadata.yaml` or `template.tpl`:
 
 ```bash
 pip install pyyaml          # one-time; the script needs Python 3.7+
@@ -128,6 +128,27 @@ It reports every violation at once. The rules most easily broken by accident:
   first.
 - **`versions:` entries must be real commits on the branch, newest first.** Never edit that list by
   hand; it is generated on release by `scripts/update-metadata-version.mjs`.
+
+## Which branch to target
+
+**Branch from `develop` and open your pull request against `develop`.** That is where work is
+integrated and where releases are cut.
+
+`master` is the *published* branch: the GTM Community Template Gallery reads `template.tpl`,
+`metadata.yaml` and `LICENSE` from it, so a push to `master` puts your change in front of every
+container that installed the tag. It is reached only by promoting `develop`, and CI fails a pull
+request opened against `master` from anything but `develop` or a `hotfix/*` branch. If you opened
+one by habit, re-target it — no need to start over:
+
+```
+gh pr edit <number> --base develop
+```
+
+One rule with no automated guard on the branch itself: **never merge `master` back into `develop`.**
+It makes release-please prune commits from the changelog — which is published as the template's
+gallery release notes — and it fails every future promotion PR.
+
+See [docs/release-automation.md](docs/release-automation.md) for the full flow.
 
 ## Community Guidelines
 
