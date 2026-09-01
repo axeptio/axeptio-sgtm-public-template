@@ -5,11 +5,14 @@ just a few small guidelines you need to follow.
 
 ## Contributions and licensing
 
-From version `1.2.0`, this template is distributed under Axeptio's licensing
-terms (see [LICENSE](./LICENSE)); earlier versions remain under the Apache
-License 2.0. By submitting a contribution you agree that it is provided under,
-and may be redistributed as part of this project under, those Axeptio licensing
-terms.
+This template is distributed under the [Apache License 2.0](./LICENSE). By
+submitting a contribution you agree that it is provided under, and may be
+redistributed as part of this project under, that licence.
+
+The [Community Template Gallery](https://developers.google.com/tag-platform/tag-manager/templates/gallery)
+requires the `LICENSE` file to contain **only** Apache 2.0. A template whose
+licence does not match is removed from the gallery automatically, so the licence
+cannot be changed while the template is distributed there.
 
 ## Code reviews
 
@@ -100,6 +103,31 @@ docs: clarify the import steps
 - Releases, the `CHANGELOG.md`, git tags, GitHub Releases, and the `versions:`
   history in `metadata.yaml` are **all generated automatically**. Do not edit
   versions or the changelog by hand.
+
+## The gallery contract
+
+This repository is not just source: it is a submission to the
+[Community Template Gallery](https://developers.google.com/tag-platform/tag-manager/templates/gallery),
+which imposes requirements on the repository itself — not just on the template code. Break one and
+Google **silently delists the template** a couple of days later, with no notification on the pull
+request and no submission-status page to check.
+
+A CI check, `Validate gallery contract`, runs on every pull request and on pushes to `master`. Run
+it yourself before touching `LICENSE`, `metadata.yaml` or `template.tpl`:
+
+```bash
+pip install pyyaml          # one-time; the script needs Python 3.7+
+python3 scripts/validate-gallery.py
+```
+
+It reports every violation at once. The rules most easily broken by accident:
+
+- **`LICENSE` must contain *only* Apache 2.0.** Not "Apache 2.0 plus a notice" — only. Replacing it
+  removes the template from the gallery; that is what SUP-1008 was on the web template.
+- **`___INFO___` should declare `categories`** — 1 to 3 values from Google's list, most relevant
+  first.
+- **`versions:` entries must be real commits on the branch, newest first.** Never edit that list by
+  hand; it is generated on release by `scripts/update-metadata-version.mjs`.
 
 ## Community Guidelines
 

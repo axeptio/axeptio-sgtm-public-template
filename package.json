@@ -12,5 +12,5 @@
     "google-auth-library": "^10.9.0",
     "js-yaml": "^4.1.0"
   },
-  "license": "SEE LICENSE IN LICENSE"
+  "license": "Apache-2.0"
 }
