@@ -121,12 +121,17 @@ Axeptio helps you provide a better user experience while ensuring compliance wit
 This repository follows [Semantic Versioning](https://semver.org/) and uses
 [Conventional Commits](https://www.conventionalcommits.org/). Releases are
 automated with [release-please](https://github.com/googleapis/release-please):
-when conventional commits land on `master`, a release pull request is kept up to
+when conventional commits land on `develop`, a release pull request is kept up to
 date and, once merged, the version is bumped, the [CHANGELOG](./CHANGELOG.md) is
 updated, a git tag and a [GitHub Release](../../releases) are published, and the
 GTM `versions:` history in `metadata.yaml` is appended automatically.
 
-See [CONTRIBUTING.md](./CONTRIBUTING.md) for the commit message conventions.
+**Cutting a release does not publish it.** The Community Template Gallery reads
+this repository's default branch, `master`, so a release reaches GTM users only
+once `develop` is promoted to `master` — a deliberate, manual step.
+
+See [docs/release-automation.md](./docs/release-automation.md) for the full flow
+and [CONTRIBUTING.md](./CONTRIBUTING.md) for the commit message conventions.
 
 <br><br>
 
