@@ -1,5 +1,19 @@
 # Changelog
 
+## [2.0.1](https://github.com/axeptio/axeptio-sgtm-public-template/compare/v2.0.0...v2.0.1) (2026-09-01)
+
+
+### Bug Fixes
+
+* **metadata:** backfill the v2.0.0 gallery entry ([151f0a6](https://github.com/axeptio/axeptio-sgtm-public-template/commit/151f0a6bb434e1a4cb99e1b137854ad414d1f7d0))
+* **metadata:** backfill the v2.0.0 gallery entry ([96d19d4](https://github.com/axeptio/axeptio-sgtm-public-template/commit/96d19d4ed49c9aea2f40e049cff6f42201ee2384))
+
+
+### Documentation
+
+* **ci:** say prepended, not appended, everywhere it is said ([ea50270](https://github.com/axeptio/axeptio-sgtm-public-template/commit/ea50270a4898bbd09eb6e3732093c8ba3ef2a0f9))
+* **ci:** say which branches Test template runs on ([da31044](https://github.com/axeptio/axeptio-sgtm-public-template/commit/da3104475821147a50ccfd19756615c4e98d682a))
+
 ## [2.0.0](https://github.com/axeptio/axeptio-sgtm-public-template/compare/v1.3.0...v2.0.0) (2026-09-01)
 
 
