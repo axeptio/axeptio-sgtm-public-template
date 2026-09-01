@@ -124,7 +124,8 @@ automated with [release-please](https://github.com/googleapis/release-please):
 when conventional commits land on `develop`, a release pull request is kept up to
 date and, once merged, the version is bumped, the [CHANGELOG](./CHANGELOG.md) is
 updated, a git tag and a [GitHub Release](../../releases) are published, and the
-GTM `versions:` history in `metadata.yaml` is appended automatically.
+GTM `versions:` history in `metadata.yaml` gets the new entry prepended
+automatically — the gallery requires that list newest first.
 
 **Cutting a release does not publish it.** The Community Template Gallery reads
 this repository's default branch, `master`, so a release reaches GTM users only
