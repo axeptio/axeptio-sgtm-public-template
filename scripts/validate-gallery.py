@@ -253,7 +253,11 @@ def check_terms_of_service() -> None:
         return
     source = TEMPLATE_PATH.read_text(encoding="utf-8-sig")
 
-    if "___TERMS_OF_SERVICE___" not in source:
+    # A standalone header line, not a substring: the marker also appears in prose
+    # (this script's own docstring, a ___NOTES___ paragraph), and a mention is not
+    # a block. `$` with MULTILINE tolerates a trailing \r from a CRLF checkout.
+    header = re.compile(r"^___TERMS_OF_SERVICE___[ \t]*\r?$", re.MULTILINE)
+    if not header.search(source):
         fail(
             "template-tos",
             "template.tpl has no ___TERMS_OF_SERVICE___ block. The gallery refuses "
@@ -263,15 +267,17 @@ def check_terms_of_service() -> None:
         )
         return
 
-    # Order matters to the exporter, not just presence: the editor always emits
-    # this block first, so a copy that has drifted below ___INFO___ signals the
-    # file was assembled by hand rather than exported.
-    markers = re.findall(r"^___[A-Z_]+___", source, flags=re.MULTILINE)
-    if markers and markers[0] != "___TERMS_OF_SERVICE___":
+    # Position, not just presence: the editor always emits this block first, so
+    # anything ahead of it means the file was assembled by hand rather than
+    # exported. Checked against the first non-empty LINE rather than the first
+    # ___MARKER___ — the latter would accept a stray line before the block, which
+    # GTM's own parser would not.
+    first_line = next((l for l in source.splitlines() if l.strip()), "")
+    if first_line.strip() != "___TERMS_OF_SERVICE___":
         fail(
             "template-tos",
-            f"___TERMS_OF_SERVICE___ must be the first block in template.tpl, "
-            f"found {markers[0]!r} first",
+            f"___TERMS_OF_SERVICE___ must be the first line of template.tpl, "
+            f"found {first_line.strip()!r}",
         )
 
 
