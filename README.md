@@ -19,9 +19,10 @@ This repository provides a **Google Tag Manager (GTM) Server-Side** template tha
    - [Step 1: Import the Template into GTM Server-Side](#step-1-import-the-template-into-gtm-server-side)
    - [Step 2: Configure the Tag](#step-2-configure-the-tag)
    - [Step 3: Test the Configuration](#step-3-test-the-configuration)
-5. [Troubleshooting and Support](#troubleshooting-and-support)
-6. [Versioning and Releases](#versioning-and-releases)
-7. [License](#license)
+5. [Claiming inbound requests](#claiming-inbound-requests)
+6. [Troubleshooting and Support](#troubleshooting-and-support)
+7. [Versioning and Releases](#versioning-and-releases)
+8. [License](#license)
 
 
 <br><br>
@@ -61,7 +62,7 @@ Follow these steps to integrate the **Axeptio sGTM** template with your **GTM Se
    - **Cookie Version**: Optional. The version of the cookies managed by Axeptio. Reference only — **not used at runtime** by this proxy tag.
    - **Proxy Base Path**: The path portion of the SDK `proxyBaseUrl` served by this container. For a `proxyBaseUrl` of `https://sgtm.example.com/axeptio`, set this to `/axeptio`. Leave it empty if the container is mounted at the domain root.
    - **Enable debug logging**: Optional. Logs each matched route and upstream URL to the GTM Server console (use in debug environments only).
-4. Define the **Triggers** that will fire the Axeptio tag. Because the tag proxies every Axeptio request, fire it on all incoming requests to your proxy domain (e.g. a Client/trigger that claims requests whose path starts with your **Proxy Base Path**), not only on consent acceptance.
+4. Define the **Triggers** that will fire the Axeptio tag. Because the tag proxies every Axeptio request, it must fire on all incoming requests to your proxy domain, not only on consent acceptance. In server-side GTM a tag cannot claim a raw HTTP request — a **Client** must claim it and dispatch an event that your trigger matches. This template ships no Client, so you must supply one: see [Claiming inbound requests](#claiming-inbound-requests) and [docs/claiming-inbound-requests.md](./docs/claiming-inbound-requests.md) for a copy-pasteable reference Client and the trigger to pair with it.
 
 ### Step 3: Test the Configuration
 Use the **Preview** tool in GTM Server-Side to verify the tag proxies traffic correctly:
@@ -100,9 +101,21 @@ The legacy `/consents` path is still accepted and forwarded to `https://api.axep
 
 1. The **path** part of `proxyBaseUrl` must match the tag's **Proxy Base Path** field (e.g. `proxyBaseUrl: 'https://sgtm.example.com/axeptio'` → Proxy Base Path `/axeptio`; root mount → leave empty).
 2. The proxy domain (`sgtm.example.com`) must route to the GTM Server-Side container running this tag.
-3. The tag's trigger must fire for **all** proxied paths, not just consent — every namespace above flows through it.
+3. A **Client** must claim the proxied paths and dispatch an event, and the tag's trigger must fire on that event for **all** proxied paths, not just consent — every namespace above flows through it. This template is a tag and ships no Client; see [Claiming inbound requests](#claiming-inbound-requests).
 
 **Caveat — static assets / fonts:** the `/fonts/*` and `/favicons/*` namespaces serve binary assets. As noted in the SDK's proxy documentation, there is no fallback to Google Fonts in proxy mode — if a binary route is misconfigured, web fonts may fail silently. Verify these routes return byte-correct responses in your environment.
+
+## Claiming inbound requests
+
+**This template is a tag, and in server-side GTM a tag cannot claim a raw HTTP request.** Google's API reference is explicit that `claimRequest` "throws an exception if called in a tag or variable", and this template never calls it. Every proxied request must first be claimed by a **Client**, which then dispatches an event that a trigger matches to fire this tag:
+
+```
+inbound HTTP request → a Client claims it → the Client dispatches an event → your trigger fires the Axeptio proxy tag
+```
+
+**No Client ships with this template, and the separate Axeptio *client* gallery template does not fill the gap** — it claims only paths containing `/consents`, has no configurable base path, and its callback replaces the response with a 1×1 GIF. Do not assume the two are a pair.
+
+[docs/claiming-inbound-requests.md](./docs/claiming-inbound-requests.md) covers the whole chain: a copy-pasteable reference Client with a matching **Proxy Base Path** field and boundary-safe path matching, the custom trigger to create on its `event_name`, the Client's server permissions, and an honest account of which parts are verified and which are derived from Google's documentation alone.
 
 ## Troubleshooting and Support🧑‍💻
 If you encounter any issues during the installation or configuration of the **Axeptio sGTM tag**, please consult the following resources:
