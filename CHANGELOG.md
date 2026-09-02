@@ -1,5 +1,14 @@
 # Changelog
 
+## [2.0.2](https://github.com/axeptio/axeptio-sgtm-public-template/compare/v2.0.1...v2.0.2) (2026-09-02)
+
+
+### Bug Fixes
+
+* **ci:** check the ToS block as a header, not a substring ([7c9b439](https://github.com/axeptio/axeptio-sgtm-public-template/commit/7c9b439706fec48c298e5204d3a81320980147c8))
+* **template:** add the Terms of Service block the gallery requires ([7ebec72](https://github.com/axeptio/axeptio-sgtm-public-template/commit/7ebec72e473fd461dd34eb84c663c9315f0aee91))
+* **template:** add the Terms of Service block the gallery requires ([0d4ce2d](https://github.com/axeptio/axeptio-sgtm-public-template/commit/0d4ce2d900a4f2ae9a7221683853a11f80a4e9f7))
+
 ## [2.0.1](https://github.com/axeptio/axeptio-sgtm-public-template/compare/v2.0.0...v2.0.1) (2026-09-01)
 
 
