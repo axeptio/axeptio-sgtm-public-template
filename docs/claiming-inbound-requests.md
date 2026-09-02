@@ -226,10 +226,11 @@ if (mine) {
     //
     // Do NOT call setPixelResponse() here: it would overwrite the upstream body
     // and content type the proxy tag staged, turning every proxied asset into a
-    // 1x1 GIF. The tag composes AND flushes the response itself
-    // (template.tpl:212-224). If the response never reaches the browser, that is
-    // the open question in section 5 of the doc — flushing from this callback
-    // with returnResponse() instead is the alternative to test.
+    // 1x1 GIF. The tag stages the response and calls returnResponse() itself
+    // (template.tpl:212-224); whether that tag-issued call is honoured is the
+    // open question in section 5 of the doc, NOT something this snippet settles.
+    // If the response never reaches the browser, calling returnResponse() from
+    // this callback instead is the alternative to test.
   });
 }
 ```
