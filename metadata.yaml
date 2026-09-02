@@ -22,10 +22,16 @@ documentation: "https://support.axeptio.eu/en/"
 # after each release — do not add them by hand.
 versions:
   # Latest version
+  - sha: 16735856fcffaab3ddeedc44d888f6812efce834
+    changeNotes: |-
+      - add the Terms of Service block the gallery requires
+  # Older versions
+  - sha: 2bbb6c00600fc8502efbff3f574206cf8651c6cd
+    changeNotes: |-
+      - metadata: backfill the v2.0.0 gallery entry
   - sha: 5efbc2dd15f496a11514f30960baf9e1351e8beb
     changeNotes: |-
       - restore the Apache 2.0 licence required by the GTM Gallery
-  # Older versions
   - sha: d0e61ae06c75c1b2d263ec3b038febbd7c42f1f6
     changeNotes: |-
       - **ci:** add Tag Manager API staging push script

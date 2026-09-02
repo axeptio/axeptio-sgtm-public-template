@@ -1,5 +1,28 @@
 # Changelog
 
+## [2.0.2](https://github.com/axeptio/axeptio-sgtm-public-template/compare/v2.0.1...v2.0.2) (2026-09-02)
+
+
+### Bug Fixes
+
+* **ci:** check the ToS block as a header, not a substring ([7c9b439](https://github.com/axeptio/axeptio-sgtm-public-template/commit/7c9b439706fec48c298e5204d3a81320980147c8))
+* **template:** add the Terms of Service block the gallery requires ([7ebec72](https://github.com/axeptio/axeptio-sgtm-public-template/commit/7ebec72e473fd461dd34eb84c663c9315f0aee91))
+* **template:** add the Terms of Service block the gallery requires ([0d4ce2d](https://github.com/axeptio/axeptio-sgtm-public-template/commit/0d4ce2d900a4f2ae9a7221683853a11f80a4e9f7))
+
+## [2.0.1](https://github.com/axeptio/axeptio-sgtm-public-template/compare/v2.0.0...v2.0.1) (2026-09-01)
+
+
+### Bug Fixes
+
+* **metadata:** backfill the v2.0.0 gallery entry ([151f0a6](https://github.com/axeptio/axeptio-sgtm-public-template/commit/151f0a6bb434e1a4cb99e1b137854ad414d1f7d0))
+* **metadata:** backfill the v2.0.0 gallery entry ([96d19d4](https://github.com/axeptio/axeptio-sgtm-public-template/commit/96d19d4ed49c9aea2f40e049cff6f42201ee2384))
+
+
+### Documentation
+
+* **ci:** say prepended, not appended, everywhere it is said ([ea50270](https://github.com/axeptio/axeptio-sgtm-public-template/commit/ea50270a4898bbd09eb6e3732093c8ba3ef2a0f9))
+* **ci:** say which branches Test template runs on ([da31044](https://github.com/axeptio/axeptio-sgtm-public-template/commit/da3104475821147a50ccfd19756615c4e98d682a))
+
 ## [2.0.0](https://github.com/axeptio/axeptio-sgtm-public-template/compare/v1.3.0...v2.0.0) (2026-09-01)
 
 
