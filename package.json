@@ -10,7 +10,7 @@
   },
   "devDependencies": {
     "google-auth-library": "^10.9.0",
-    "js-yaml": "^4.1.0"
+    "js-yaml": "^4.3.2"
   },
   "license": "Apache-2.0"
 }
