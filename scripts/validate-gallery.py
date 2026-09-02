@@ -239,6 +239,48 @@ def check_latest_marker() -> None:
         )
 
 
+def check_terms_of_service() -> None:
+    """template.tpl must open with the gallery's Terms of Service block.
+
+    The Template Editor writes it when "Agree to the Community Template Gallery
+    Terms of Service" is ticked under Info. Without it a submission is refused
+    outright — `updateError 8`, "Terms of Service section missing" — which is
+    what happened the first time this template was submitted. Every listed
+    template starts with this block; nothing else in this script would have
+    caught its absence.
+    """
+    if not TEMPLATE_PATH.is_file():
+        return
+    source = TEMPLATE_PATH.read_text(encoding="utf-8-sig")
+
+    # A standalone header line, not a substring: the marker also appears in prose
+    # (this script's own docstring, a ___NOTES___ paragraph), and a mention is not
+    # a block. `$` with MULTILINE tolerates a trailing \r from a CRLF checkout.
+    header = re.compile(r"^___TERMS_OF_SERVICE___[ \t]*\r?$", re.MULTILINE)
+    if not header.search(source):
+        fail(
+            "template-tos",
+            "template.tpl has no ___TERMS_OF_SERVICE___ block. The gallery refuses "
+            "the submission without it. Tick 'Agree to the Community Template "
+            "Gallery Terms of Service' in the Template Editor's Info tab and "
+            "re-export, or restore the block at the top of the file.",
+        )
+        return
+
+    # Position, not just presence: the editor always emits this block first, so
+    # anything ahead of it means the file was assembled by hand rather than
+    # exported. Checked against the first non-empty LINE rather than the first
+    # ___MARKER___ — the latter would accept a stray line before the block, which
+    # GTM's own parser would not.
+    first_line = next((l for l in source.splitlines() if l.strip()), "")
+    if first_line.strip() != "___TERMS_OF_SERVICE___":
+        fail(
+            "template-tos",
+            f"___TERMS_OF_SERVICE___ must be the first line of template.tpl, "
+            f"found {first_line.strip()!r}",
+        )
+
+
 def check_template_info() -> None:
     if not TEMPLATE_PATH.is_file():
         return
@@ -311,6 +353,7 @@ def main() -> int:
     if data is not None:
         check_versions(check_metadata_fields(data))
         check_latest_marker()
+    check_terms_of_service()
     check_template_info()
     check_issues_enabled()
 
