@@ -44,7 +44,10 @@ The associated permissions for `claimRequest` are listed as **None** — it is g
 template *type*, not by a permission you could grant to a tag.
 
 This template declares `"type": "TAG"` (`template.tpl:12`) and calls `claimRequest`
-nowhere: `grep -rn claimRequest` over this repository returns zero matches. So a raw
+nowhere: `grep -n claimRequest template.tpl` returns zero matches, and so does the same
+grep over `test/`, `integration/` and `e2e/`. (This page and the README name the API in
+prose, so a repository-wide grep now matches those; the template and its test suites do
+not call it.) So a raw
 request to `https://sgtm.example.com/axeptio/client/…` reaches the container, is offered
 to each Client in priority order, and if **no Client claims it** the proxy tag is never
 reached, however its triggers are configured.
