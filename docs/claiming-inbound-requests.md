@@ -246,8 +246,8 @@ permissions as "None".
       "key": { "publicId": "read_request", "versionId": "1" },
       "param": [
         { "key": "requestAccess", "value": { "type": 1, "string": "any" } },
-        { "key": "headerAccess", "value": { "type": 1, "string": "none" } },
-        { "key": "queryParameterAccess", "value": { "type": 1, "string": "none" } }
+        { "key": "headerAccess", "value": { "type": 1, "string": "any" } },
+        { "key": "queryParameterAccess", "value": { "type": 1, "string": "any" } }
       ]
     },
     "clientAnnotations": { "isEditedByUser": true },
@@ -264,8 +264,17 @@ permissions as "None".
 ```
 
 `read_request` is what `getRequestPath` requires; `run_container` is what `runContainer`
-requires. The tag keeps its own, wider permissions — this Client reads the path and
-nothing else.
+requires. Two permissions against the tag's five (`logging`, `send_http`, `read_request`,
+`access_response`, `return_response`): this Client makes no outbound call and never
+touches the response.
+
+The three `read_request` sub-options are shown as `any` because that is the shape used by
+the published templates in this repository and its sibling — Google's permission reference
+describes `read_request` as covering "the request headers, query parameters, body, path,
+or remote IP address" and allows narrowing it, but does not publish the exact values the
+narrowed form takes in a `.tpl`, so no narrower literal is asserted here. The Client's
+*code* reads only `getRequestPath()`. If your container policy requires tighter access,
+narrow it in the GTM permission editor rather than by hand-editing this block.
 
 ### The custom trigger — the step most often missed
 
@@ -310,13 +319,21 @@ shim:
 Neither harness contains the string `claimRequest`, and neither simulates a Client, so
 **neither proves anything about whether a Client can be made to invoke this tag.**
 
-**The one suite that would prove it has never run.** `e2e/proxy-e2e.mjs` hits a live
-tagging server over HTTP, which is the only place the Client → trigger → tag chain
-exists. It reads the `TAGGING_URL` environment variable, which `.github/workflows/e2e.yml`
-populates from the repository secret `SGTM_TEST_TAGGING_URL`. With no `TAGGING_URL` it
-skips every case and exits 0. This repository has zero secrets and zero variables
-configured, so that secret does not exist and the suite has never executed against a
-container. A green `npm run e2e` is not evidence of anything.
+**The one suite that would prove it has not run.** `e2e/proxy-e2e.mjs` hits a live tagging
+server over HTTP, which is the only place the Client → trigger → tag chain exists. It
+reads the `TAGGING_URL` environment variable, which `.github/workflows/e2e.yml` populates
+from the repository secret `SGTM_TEST_TAGGING_URL`. **With no `TAGGING_URL` it skips every
+case and exits 0** — so its result is only evidence when that secret is configured. As of
+the commit that added this page it was not (`gh secret list` and `gh variable list` on
+this repository both returned nothing), and the suite had never executed against a
+container. Check the current state before treating a green e2e run as proof:
+
+```bash
+gh secret list   # is SGTM_TEST_TAGGING_URL configured?
+gh run list --workflow e2e.yml   # and did the run actually exercise the routes?
+```
+
+A green `npm run e2e` with the secret unset is not evidence of anything.
 
 **Consequences, stated plainly:**
 
