@@ -1,5 +1,23 @@
 # Changelog
 
+## [2.0.3](https://github.com/axeptio/axeptio-sgtm-public-template/compare/v2.0.2...v2.0.3) (2026-09-02)
+
+
+### Documentation
+
+* correct the squash-merge claim in CONTRIBUTING ([dda7c40](https://github.com/axeptio/axeptio-sgtm-public-template/commit/dda7c40fab37118a045fa47fcbb2d9f5494528bb))
+* explain how inbound proxy traffic must be claimed by a Client ([91372bd](https://github.com/axeptio/axeptio-sgtm-public-template/commit/91372bd3750d2af84f92f794686bece3df8cb527))
+* explain how inbound proxy traffic must be claimed by a Client ([8753758](https://github.com/axeptio/axeptio-sgtm-public-template/commit/8753758ac47dcf7e32a42c9f5a319c200e94694b))
+* scope the claimRequest grep claim to the template and its suites ([bbc46c1](https://github.com/axeptio/axeptio-sgtm-public-template/commit/bbc46c11a877f6c6f2fe191adf73faa90f5f231e))
+* state the observable call, not the flush effect, in the Client snippet ([b292044](https://github.com/axeptio/axeptio-sgtm-public-template/commit/b292044c061002346461c9c234e266b96cf41eed))
+* stop asserting an unverifiable permission shape and a dated repo state ([665f451](https://github.com/axeptio/axeptio-sgtm-public-template/commit/665f45162cb3166950524d1255f9b44284bdabdd))
+
+
+### Build System
+
+* **deps:** bump js-yaml to ^4.3.2 ([647b078](https://github.com/axeptio/axeptio-sgtm-public-template/commit/647b0784ed2d1ada9e026a9939041eea198749fb))
+* **deps:** bump js-yaml to ^4.3.2 ([b7eeb90](https://github.com/axeptio/axeptio-sgtm-public-template/commit/b7eeb90df2fe62de2da39a3a04b82e23606681d6))
+
 ## [2.0.2](https://github.com/axeptio/axeptio-sgtm-public-template/compare/v2.0.1...v2.0.2) (2026-09-02)
 
 
