@@ -33,9 +33,15 @@ In your GTM **server** container: **Templates → Tag Templates → Search Galle
 **Axeptio CMP (Server-Side)**, and add it to your workspace. Then create a tag from the template
 and set the **Proxy Base Path** to match your SDK's `proxyBaseUrl`.
 
-Trigger it on **all** incoming requests to your proxy domain — for example a **Client** that
-claims requests whose path starts with your Proxy Base Path. Every Axeptio namespace flows
+Trigger it on **all** incoming requests to your proxy domain. Every Axeptio namespace flows
 through this one tag, so a trigger scoped to consent submissions alone will break the CMP.
+
+A tag cannot claim an inbound request by itself — that is a **Client**'s job, and no built-in
+Client claims these paths. Pair this template with
+[axeptio-client-sgtm-public-template](https://github.com/axeptio/axeptio-client-sgtm-public-template),
+which claims Axeptio requests and hands them to this tag. Client templates are not distributed
+through the gallery, so import that one into your container manually
+(**Templates → New → ⋮ → Import**).
 
 Step-by-step setup lives in the Help Center:
 
@@ -120,6 +126,7 @@ Use the **Preview** tool in your server container:
 | --- | --- |
 | [axeptio-gtm-public-template](https://github.com/axeptio/axeptio-gtm-public-template) | The **Axeptio CMP tag** for web containers — loads the CMP and drives Google Consent Mode v2 |
 | [axeptio-gtm-public-variable](https://github.com/axeptio/axeptio-gtm-public-variable) | GTM **variable** exposing Axeptio consent state to your other tags |
+| [axeptio-client-sgtm-public-template](https://github.com/axeptio/axeptio-client-sgtm-public-template) | The server-side **Client** that claims Axeptio requests for this tag |
 
 ## Support
 
