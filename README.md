@@ -33,9 +33,9 @@ In your GTM **server** container: **Templates → Tag Templates → Search Galle
 **Axeptio CMP (Server-Side)**, and add it to your workspace. Then create a tag from the template
 and set the **Proxy Base Path** to match your SDK's `proxyBaseUrl`.
 
-Trigger it on **all** incoming requests to your proxy domain — for example a client that claims
-requests whose path starts with your Proxy Base Path. Every Axeptio namespace flows through this
-one tag, so a trigger scoped to consent submissions alone will break the CMP.
+Trigger it on **all** incoming requests to your proxy domain — for example a **Client** that
+claims requests whose path starts with your Proxy Base Path. Every Axeptio namespace flows
+through this one tag, so a trigger scoped to consent submissions alone will break the CMP.
 
 Step-by-step setup lives in the Help Center:
 

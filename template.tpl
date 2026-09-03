@@ -559,7 +559,7 @@ Setup
     namespace above flows through it, so a trigger scoped to consent alone
     breaks the CMP.
   - Axeptio Project ID and Cookie Version are reference only. They are not used
-    at runtime; the SDK already carries the client id.
+    at runtime; the SDK already carries 'clientId'.
   - /fonts/* and /favicons/* serve binary assets and there is no fallback to
     Google Fonts in proxy mode. A misconfigured binary route fails silently.
 
