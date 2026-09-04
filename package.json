@@ -3,6 +3,13 @@
   "version": "0.0.0",
   "private": true,
   "description": "Tooling to unit-test the Axeptio sGTM custom template (template.tpl). Not published; the template itself is distributed via the GTM Community Template Gallery.",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/axeptio/axeptio-sgtm-public-template.git"
+  },
+  "bugs": {
+    "url": "https://github.com/axeptio/axeptio-sgtm-public-template/issues"
+  },
   "scripts": {
     "test": "node --test",
     "integration": "node --test integration/proxy-integration.mjs",

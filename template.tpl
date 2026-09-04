@@ -526,6 +526,42 @@ scenarios:
 
 ___NOTES___
 
-Created on 28/05/2024, 17:56:34
+Axeptio CMP (Server-Side) — a first-party reverse proxy for Axeptio.
 
+The Axeptio JS SDK, when configured with 'proxyBaseUrl', sends all of its traffic
+to your own domain instead of Axeptio's. This tag receives those requests in your
+tagging server and forwards each one to the matching Axeptio origin, so the CMP
+script, its configuration and the visitor's consent calls all travel first-party.
 
+Routes ('*' is the remainder of the path, forwarded as-is):
+
+  /static/*     ->  https://static.axept.io/*
+  /client/*     ->  https://client.axept.io/*
+  /api/v1/*     ->  https://api.axept.io/v1/*
+  /favicons/*   ->  https://favicons.axept.io/*
+  /fonts/*      ->  https://fonts.axept.io/*
+  /static-eu/*  ->  https://static.axeptio.eu/*
+
+The legacy '/consents' path is still accepted and forwarded to
+https://api.axept.io/v1/app/consents. Anything unmatched returns a 404.
+
+Forwarding is transparent: the HTTP method, the query string and the relevant
+request and response headers are preserved, and the upstream status code is
+relayed as-is.
+
+Setup
+
+  - Proxy Base Path must be the path part of the SDK's 'proxyBaseUrl'. For
+    'https://sgtm.example.com/axeptio' set '/axeptio'; leave it empty when the
+    container is mounted at the domain root. It is stripped before route
+    matching.
+  - Trigger this tag on ALL incoming requests to the proxy domain. Every
+    namespace above flows through it, so a trigger scoped to consent alone
+    breaks the CMP.
+  - Axeptio Project ID and Cookie Version are reference only. They are not used
+    at runtime; the SDK already carries 'clientId'.
+  - /fonts/* and /favicons/* serve binary assets and there is no fallback to
+    Google Fonts in proxy mode. A misconfigured binary route fails silently.
+
+Source, tests and documentation:
+https://github.com/axeptio/axeptio-sgtm-public-template
