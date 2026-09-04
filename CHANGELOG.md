@@ -1,5 +1,16 @@
 # Changelog
 
+## [2.0.4](https://github.com/axeptio/axeptio-sgtm-public-template/compare/v2.0.3...v2.0.4) (2026-09-04)
+
+
+### Documentation
+
+* address Copilot review round 1 ([8f3471c](https://github.com/axeptio/axeptio-sgtm-public-template/commit/8f3471c47d8c87b1b10aab02a6be1f248dc10749))
+* point the README at the Client that claims the requests ([4388947](https://github.com/axeptio/axeptio-sgtm-public-template/commit/4388947fc628b3849e930af16131c5327c29109c))
+* polish the README and repository metadata to match the sibling GTM template repos ([7714475](https://github.com/axeptio/axeptio-sgtm-public-template/commit/77144752e32de5f8d09ee281da5afb0aa6390840))
+* rewrite the README to match the sibling GTM template repos ([e636acb](https://github.com/axeptio/axeptio-sgtm-public-template/commit/e636acb84445168509762b14d3003616264d3d41))
+* **template:** replace the placeholder ___NOTES___ block ([4140d21](https://github.com/axeptio/axeptio-sgtm-public-template/commit/4140d2131fff3163c5f1f6384c4d3bbeaea0e215))
+
 ## [2.0.3](https://github.com/axeptio/axeptio-sgtm-public-template/compare/v2.0.2...v2.0.3) (2026-09-02)
 
 
