@@ -131,7 +131,12 @@ const routes = [
   { prefix: '/client/', upstream: 'https://client.axept.io/' },
   { prefix: '/api/v1/', upstream: 'https://api.axept.io/v1/' },
   { prefix: '/favicons/', upstream: 'https://favicons.axept.io/' },
-  { prefix: '/fonts/', upstream: 'https://fonts.axept.io/' }
+  { prefix: '/fonts/', upstream: 'https://fonts.axept.io/' },
+  // imgix is not under axept.io, so it needs its own send_http entry.
+  { prefix: '/images/', upstream: 'https://axeptio.imgix.net/' },
+  // Back-office video uploads live in their own imgix source, separate from
+  // the one serving images (SUP-846).
+  { prefix: '/videos/', upstream: 'https://axeptio-videos.imgix.net/' }
 ];
 
 // Hop-by-hop and framing headers that must not be relayed from the upstream
@@ -296,6 +301,14 @@ ___SERVER_PERMISSIONS___
               {
                 "type": 1,
                 "string": "https://*.axeptio.eu/*"
+              },
+              {
+                "type": 1,
+                "string": "https://axeptio.imgix.net/*"
+              },
+              {
+                "type": 1,
+                "string": "https://axeptio-videos.imgix.net/*"
               }
             ]
           }
@@ -442,6 +455,24 @@ scenarios:
     mockUpstream({ statusCode: 200, body: 'x', headers: {} });
     runCode({ proxyBasePath: '' });
     assertThat(sent.url).isEqualTo('https://fonts.axept.io/x.woff2');
+- name: 'image GET is forwarded to axeptio imgix net'
+  code: |-
+    mockRequest('/images/2022/01/banner.png', 'GET');
+    mockUpstream({ statusCode: 200, body: 'x', headers: {} });
+    runCode({ proxyBasePath: '' });
+    assertThat(sent.url).isEqualTo('https://axeptio.imgix.net/2022/01/banner.png');
+- name: 'image query string is preserved so imgix transforms survive'
+  code: |-
+    mockRequest('/images/a.png?auto=format&fit=crop&w=170', 'GET');
+    mockUpstream({ statusCode: 200, body: 'x', headers: {} });
+    runCode({ proxyBasePath: '' });
+    assertThat(sent.url).isEqualTo('https://axeptio.imgix.net/a.png?auto=format&fit=crop&w=170');
+- name: 'video GET is forwarded to axeptio videos imgix net'
+  code: |-
+    mockRequest('/videos/2026/04/clip.mp4', 'GET');
+    mockUpstream({ statusCode: 200, body: 'x', headers: {} });
+    runCode({ proxyBasePath: '' });
+    assertThat(sent.url).isEqualTo('https://axeptio-videos.imgix.net/2026/04/clip.mp4');
 - name: 'static-eu is routed to static axeptio eu and not shadowed by the static path'
   code: |-
     mockRequest('/static-eu/app.js', 'GET');

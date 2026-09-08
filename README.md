@@ -89,6 +89,8 @@ Three things have to line up:
 | `/favicons/*` | `https://favicons.axept.io/*` |
 | `/fonts/*` | `https://fonts.axept.io/*` |
 | `/static-eu/*` | `https://static.axeptio.eu/*` |
+| `/images/*` | `https://axeptio.imgix.net/*` |
+| `/videos/*` | `https://axeptio-videos.imgix.net/*` |
 
 The legacy `/consents` path is still accepted, and forwarded to
 `https://api.axept.io/v1/app/consents` for backward compatibility. Anything unmatched returns a
@@ -109,11 +111,11 @@ environment.
 Use the **Preview** tool in your server container:
 
 1. **Namespace routing** — send a request to each path (`/api/v1/...`, `/client/...`,
-   `/static/...`, `/fonts/...`, `/favicons/...`, `/static-eu/...`) and confirm it reaches the
+   `/static/...`, `/fonts/...`, `/favicons/...`, `/static-eu/...`, `/images/...`, `/videos/...`) and confirm it reaches the
    matching upstream and returns the expected status.
 2. **Method & query preservation** — confirm `GET` and `POST` and the original query string are
    forwarded unchanged (a consent submission to `/api/v1/app/consents` is a `POST`).
-3. **Binary asset relay** — confirm `/fonts/*` and `/favicons/*` return byte-correct assets: web
+3. **Binary asset relay** — confirm `/fonts/*`, `/favicons/*`, `/images/*` and `/videos/*` return byte-correct assets: web
    fonts render, the favicon loads.
 4. **Base path** — with a Proxy Base Path set, confirm requests under it (`/axeptio/api/v1/...`)
    match, and that an unknown path returns a `404`.

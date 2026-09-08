@@ -77,7 +77,7 @@ What it *does*, once something has caused it to run:
 | Behaviour | Where |
 | --- | --- |
 | Normalises the **Proxy Base Path** (leading slash, no trailing slash, a bare `/` means root mount) and strips it only on a path boundary, so `/axeptio` never mis-strips `/axeptiofoo` | `template.tpl:152-176` |
-| Matches the remaining path against six namespaces — `/static-eu/`, `/static/`, `/client/`, `/api/v1/`, `/favicons/`, `/fonts/` — most specific first | `template.tpl:128-135` |
+| Matches the remaining path against eight namespaces — `/static-eu/`, `/static/`, `/client/`, `/api/v1/`, `/favicons/`, `/fonts/`, `/images/`, `/videos/` — most specific first | `template.tpl:128-140` |
 | Accepts the legacy `/consents` alias, forwarding it to `https://api.axept.io/v1/app/consents` | `template.tpl:197-198` |
 | Sets the response status, body and headers from the upstream response, calls `returnResponse()`, then `data.gtmOnSuccess()` | `template.tpl:212-226` |
 | On an upstream failure, answers `502` and calls `data.gtmOnFailure()` | `template.tpl:233-236` |
@@ -109,7 +109,7 @@ own `template.tpl`:
    `proxyBaseUrl` is mounted.
 2. **Its claim predicate is hardcoded and narrow.** Line 95 is
    `if (requestPath.indexOf('/consents') > -1) {`, and line 97 is the `claimRequest()`
-   inside it. It claims only paths *containing* `/consents`. None of the six proxy
+   inside it. It claims only paths *containing* `/consents`. None of the eight proxy
    namespaces — `/static/`, `/client/`, `/api/v1/`, `/favicons/`, `/fonts/`,
    `/static-eu/` — matches, so the SDK bundle, the assets and the fonts are never
    claimed. It is also a substring test, not a boundary-safe prefix test.
