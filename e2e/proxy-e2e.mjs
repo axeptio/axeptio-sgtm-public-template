@@ -21,7 +21,12 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 
 const TAGGING_URL = (process.env.TAGGING_URL || '').replace(/\/+$/, '');
-const BASE_PATH = process.env.PROXY_BASE_PATH || '';
+// Normalised like the tag and the reference Client: leading slash, no trailing
+// slash, and a bare '/' (or '////') means the domain root, i.e. ''.
+const BASE_PATH = (() => {
+  const trimmed = (process.env.PROXY_BASE_PATH || '').replace(/\/+$/, '');
+  return trimmed && !trimmed.startsWith('/') ? `/${trimmed}` : trimmed;
+})();
 
 // One sample per namespace. `env` is the override variable (kept explicit so the
 // skip hint never points at a name the harness doesn't read), `def` the default
