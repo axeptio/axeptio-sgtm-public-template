@@ -22,10 +22,15 @@ documentation: "https://support.axeptio.eu/en/"
 # after each release — do not add them by hand.
 versions:
   # Latest version
+  - sha: cfd85f4bd5352ad0bbd4cd44894d213128cb33b4
+    changeNotes: |-
+      - let browsers cache static responses when upstream sets no Cache-Control
+      - leave unmatched paths to the claiming Client
+      - stop answering 502 when the upstream cannot be reached
+  # Older versions
   - sha: 1b6672c99704aeda10c09349842a9564259c4ea1
     changeNotes: |-
       Release v2.0.3
-  # Older versions
   - sha: 16735856fcffaab3ddeedc44d888f6812efce834
     changeNotes: |-
       - add the Terms of Service block the gallery requires
