@@ -165,3 +165,16 @@ test('unmatched path returns 404 without contacting any upstream', async () => {
   assert.equal(res.gtmOnFailureCalls, 1);
   assert.equal(mock.requests.length, 0);
 });
+
+// --- 9. Static namespaces get a browser cache when the upstream sets none. -----
+test('static response without Cache-Control gets a one hour browser cache', async () => {
+  const res = await run({ path: '/static/echo' });
+  assert.equal(res.status, 200);
+  assert.equal(res.headers['cache-control'], 'public, max-age=3600');
+});
+
+test('api response never gets an added Cache-Control', async () => {
+  const res = await run({ path: '/api/v1/echo' });
+  assert.equal(res.status, 200);
+  assert.equal(res.headers['cache-control'], undefined);
+});

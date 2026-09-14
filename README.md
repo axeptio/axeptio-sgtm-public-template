@@ -96,7 +96,13 @@ The legacy `/consents` path is still accepted, and forwarded to
 
 Forwarding is transparent: the HTTP method, the query string and the relevant request and
 response headers are preserved, and the upstream status code is relayed as-is, so redirects,
-`304`s and errors reach the caller instead of being swallowed.
+`304`s and errors reach the caller instead of being swallowed. The exceptions are about what a
+hosted tagging server bills or counts against its SLA:
+
+- When a `/static/`, `/static-eu/`, `/fonts/` or `/favicons/` response carries no
+  `Cache-Control`, the tag adds `Cache-Control: public, max-age=3600`. Without it browsers
+  revalidate the SDK on almost every page view, and hosts such as Addingwell and Stape bill each
+  of those requests.
 
 **Caveat — binary assets.** `/fonts/*` and `/favicons/*` serve fonts and icons, and in proxy
 mode the SDK has no fallback to Google Fonts. A misconfigured binary route fails silently, with
