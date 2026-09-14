@@ -91,8 +91,8 @@ Three things have to line up:
 | `/static-eu/*` | `https://static.axeptio.eu/*` |
 
 The legacy `/consents` path is still accepted, and forwarded to
-`https://api.axept.io/v1/app/consents` for backward compatibility. Anything unmatched returns a
-`404`.
+`https://api.axept.io/v1/app/consents` for backward compatibility. Anything unmatched is left
+untouched for the Client that claimed the request to answer.
 
 Forwarding is transparent: the HTTP method, the query string and the relevant request and
 response headers are preserved, and the upstream status code is relayed as-is, so redirects,
@@ -124,7 +124,7 @@ Use the **Preview** tool in your server container:
 3. **Binary asset relay** — confirm `/fonts/*` and `/favicons/*` return byte-correct assets: web
    fonts render, the favicon loads.
 4. **Base path** — with a Proxy Base Path set, confirm requests under it (`/axeptio/api/v1/...`)
-   match, and that an unknown path returns a `404`.
+   match, and that an unknown path under it returns the `404` your Client stages.
 
 </details>
 

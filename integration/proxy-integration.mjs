@@ -155,16 +155,16 @@ for (const basePath of ['/', '']) {
 
 test('base path never mis-strips the non-boundary prefix axeptiofoo', async () => {
   const res = await run({ path: '/axeptiofoo/static/echo', data: { proxyBasePath: '/axeptio' } });
-  assert.equal(res.status, 404);
+  assert.equal(res.responded, false);
   assert.equal(mock.requests.length, 0);
 });
 
-// --- 8. Unmatched path: 404, no upstream traffic. ------------------------------
-test('unmatched path returns 404 without contacting any upstream', async () => {
+// --- 8. Unmatched path: left to the claiming Client, no upstream traffic. ------
+test('unmatched path is left to the claiming Client without contacting any upstream', async () => {
   const res = await run({ path: '/nope' });
-  assert.equal(res.status, 404);
-  assert.equal(res.body.toString(), 'Not Found');
-  assert.equal(res.gtmOnFailureCalls, 1);
+  assert.equal(res.responded, false);
+  assert.equal(res.status, undefined);
+  assert.equal(res.gtmOnSuccessCalls, 1);
   assert.equal(mock.requests.length, 0);
 });
 

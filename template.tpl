@@ -253,13 +253,13 @@ if (upstreamUrl) {
     data.gtmOnFailure();
   });
 } else {
-  // No namespace matched: respond with an explicit 404 and mark the tag as
-  // failed so misroutes are diagnosable instead of looking like a successful
-  // execution in Preview/monitoring.
-  setResponseStatus(404);
-  setResponseBody('Not Found');
-  returnResponse();
-  data.gtmOnFailure();
+  // No namespace matched: leave the response untouched. The request belongs to
+  // whichever Client claimed it, and answering here would overwrite that
+  // Client's response whenever this tag sits on a broad trigger.
+  if (data.enableLogging) {
+    logToConsole('Axeptio proxy: no route for ' + method + ' ' + path + ', left to the claiming Client');
+  }
+  data.gtmOnSuccess();
 }
 
 
@@ -476,8 +476,8 @@ scenarios:
     mockRequest('/axeptiofoo/api/v1/app', 'GET');
     runCode({ proxyBasePath: '/axeptio' });
     assertApi('sendHttpRequest').wasNotCalled();
-    assertApi('setResponseStatus').wasCalledWith(404);
-    assertApi('gtmOnFailure').wasCalled();
+    assertApi('returnResponse').wasNotCalled();
+    assertApi('gtmOnSuccess').wasCalled();
 - name: 'query string is preserved on the forwarded URL'
   code: |-
     mockRequest('/api/v1/app', 'GET');
@@ -515,14 +515,14 @@ scenarios:
     assertApi('setResponseStatus').wasNotCalled();
     assertApi('returnResponse').wasNotCalled();
     assertApi('gtmOnFailure').wasCalled();
-- name: 'an unmatched path returns 404 and does not call upstream'
+- name: 'an unmatched path is left to the claiming Client and does not call upstream'
   code: |-
     mockRequest('/random', 'GET');
     runCode({ proxyBasePath: '' });
     assertApi('sendHttpRequest').wasNotCalled();
-    assertApi('setResponseStatus').wasCalledWith(404);
-    assertApi('setResponseBody').wasCalledWith('Not Found');
-    assertApi('gtmOnFailure').wasCalled();
+    assertApi('setResponseStatus').wasNotCalled();
+    assertApi('returnResponse').wasNotCalled();
+    assertApi('gtmOnSuccess').wasCalled();
 - name: 'a static 200 without Cache-Control gets a one hour browser cache'
   code: |-
     let headersSet = {};
@@ -604,7 +604,8 @@ Routes ('*' is the remainder of the path, forwarded as-is):
   /static-eu/*  ->  https://static.axeptio.eu/*
 
 The legacy '/consents' path is still accepted and forwarded to
-https://api.axept.io/v1/app/consents. Anything unmatched returns a 404.
+https://api.axept.io/v1/app/consents. Anything unmatched is left to the Client
+that claimed the request.
 
 Forwarding is transparent: the HTTP method, the query string and the relevant
 request and response headers are preserved, and the upstream status code is
