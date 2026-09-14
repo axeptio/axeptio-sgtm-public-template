@@ -1,5 +1,30 @@
 # Changelog
 
+## [2.1.0](https://github.com/axeptio/axeptio-sgtm-public-template/compare/v2.0.3...v2.1.0) (2026-09-14)
+
+
+### Features
+
+* **template:** cut billed sGTM requests and stop 5xx/404 from the proxy tag ([0bb4a95](https://github.com/axeptio/axeptio-sgtm-public-template/commit/0bb4a953fb64b1fbb7a4cfc730c2c25f9552f0e2))
+* **template:** let browsers cache static responses when upstream sets no Cache-Control ([ef65ed2](https://github.com/axeptio/axeptio-sgtm-public-template/commit/ef65ed278c0172ef9b0fa563e7124423017a6424))
+
+
+### Bug Fixes
+
+* **template:** leave unmatched paths to the claiming Client ([d8dc2a2](https://github.com/axeptio/axeptio-sgtm-public-template/commit/d8dc2a28305b38e3ae5f64e2b2b5475aff3fb6f9))
+* **template:** stop answering 502 when the upstream cannot be reached ([d6d563f](https://github.com/axeptio/axeptio-sgtm-public-template/commit/d6d563f45443dd825e163efca68770f4f0a970aa))
+
+
+### Documentation
+
+* address Copilot review round 1 ([8f3471c](https://github.com/axeptio/axeptio-sgtm-public-template/commit/8f3471c47d8c87b1b10aab02a6be1f248dc10749))
+* make the reference Client stage a 404 and flush the response ([df19db9](https://github.com/axeptio/axeptio-sgtm-public-template/commit/df19db9cfebe2fb9f24c09b212ab47448a1c036b))
+* point the README at the Client that claims the requests ([4388947](https://github.com/axeptio/axeptio-sgtm-public-template/commit/4388947fc628b3849e930af16131c5327c29109c))
+* polish the README and repository metadata to match the sibling GTM template repos ([7714475](https://github.com/axeptio/axeptio-sgtm-public-template/commit/77144752e32de5f8d09ee281da5afb0aa6390840))
+* rewrite the README to match the sibling GTM template repos ([e636acb](https://github.com/axeptio/axeptio-sgtm-public-template/commit/e636acb84445168509762b14d3003616264d3d41))
+* state the cache status rule and the Client flush requirement ([432070c](https://github.com/axeptio/axeptio-sgtm-public-template/commit/432070c57868ac126ff7f18ba894e2e422f7b162))
+* **template:** replace the placeholder ___NOTES___ block ([4140d21](https://github.com/axeptio/axeptio-sgtm-public-template/commit/4140d2131fff3163c5f1f6384c4d3bbeaea0e215))
+
 ## [2.0.3](https://github.com/axeptio/axeptio-sgtm-public-template/compare/v2.0.2...v2.0.3) (2026-09-02)
 
 
