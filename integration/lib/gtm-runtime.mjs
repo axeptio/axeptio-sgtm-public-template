@@ -56,9 +56,29 @@ export function runProxyTag({
     const gtmOnFailure = spy();
 
     const timer = setTimeout(
-      () => reject(new Error('returnResponse was not called within 2s')),
+      () => reject(new Error('the tag neither returned a response nor finished within 2s')),
       2000,
     );
+
+    // Resolve once, via microtask so the template's calls that follow the one
+    // that settled (data.gtmOnSuccess/Failure after returnResponse) have run
+    // before the test's await resumes. `responded` is false when the tag
+    // finished without flushing, leaving the response to the claiming Client.
+    let settled = false;
+    const settle = (responded) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+      queueMicrotask(() => resolve({
+        responded,
+        status: result.status,
+        headers: result.headers,
+        body: Buffer.from(result.body || '', 'latin1'),
+        gtmOnSuccessCalls: gtmOnSuccess.calls.length,
+        gtmOnFailureCalls: gtmOnFailure.calls.length,
+        logs: result.logs,
+      }));
+    };
 
     const headerLookup = (name) => {
       const wanted = String(name).toLowerCase();
@@ -106,19 +126,7 @@ export function runProxyTag({
       setResponseStatus: (s) => { result.status = s; },
       setResponseBody: (b) => { result.body = b; },
       setResponseHeader: (k, v) => { result.headers[String(k).toLowerCase()] = v; },
-      returnResponse: () => {
-        clearTimeout(timer);
-        // Resolve via microtask so the template's post-returnResponse calls
-        // (data.gtmOnSuccess/Failure) have run before the test's await resumes.
-        queueMicrotask(() => resolve({
-          status: result.status,
-          headers: result.headers,
-          body: Buffer.from(result.body || '', 'latin1'),
-          gtmOnSuccessCalls: gtmOnSuccess.calls.length,
-          gtmOnFailureCalls: gtmOnFailure.calls.length,
-          logs: result.logs,
-        }));
-      },
+      returnResponse: () => settle(true),
     };
 
     const context = vm.createContext({
@@ -126,7 +134,10 @@ export function runProxyTag({
         if (name in apis) return apis[name];
         throw new Error(`integration runtime: template required unshimmed API '${name}'`);
       },
-      data: Object.assign({}, data, { gtmOnSuccess, gtmOnFailure }),
+      data: Object.assign({}, data, {
+        gtmOnSuccess: (...args) => { gtmOnSuccess(...args); settle(false); },
+        gtmOnFailure: (...args) => { gtmOnFailure(...args); settle(false); },
+      }),
       Object, Array, JSON, Math, String, Number,
     });
 

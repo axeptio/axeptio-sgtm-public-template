@@ -126,11 +126,13 @@ test('hop-by-hop response headers are stripped and normal headers relayed', asyn
   }
 });
 
-// --- 6. Upstream connection error maps to a deterministic 502. -----------------
-test('upstream connection error returns 502 Bad Gateway', async () => {
+// --- 6. Upstream connection error: the tag fails without answering. ------------
+// A 5xx counts against hosted tagging servers' SLA (SUP-1133), so the response
+// is left to the Client that claimed the request.
+test('upstream connection error fails the tag without answering the request', async () => {
   const res = await run({ path: '/api/v1/network-error' });
-  assert.equal(res.status, 502);
-  assert.equal(res.body.toString(), 'Bad Gateway');
+  assert.equal(res.responded, false);
+  assert.equal(res.status, undefined);
   assert.equal(res.gtmOnFailureCalls, 1);
 });
 

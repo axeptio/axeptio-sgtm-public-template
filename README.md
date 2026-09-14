@@ -103,6 +103,8 @@ hosted tagging server bills or counts against its SLA:
   `Cache-Control`, the tag adds `Cache-Control: public, max-age=3600`. Without it browsers
   revalidate the SDK on almost every page view, and hosts such as Addingwell and Stape bill each
   of those requests.
+- When the upstream cannot be reached, the tag answers nothing and marks itself failed. The
+  status your Client staged is returned instead of a `5xx`.
 
 **Caveat — binary assets.** `/fonts/*` and `/favicons/*` serve fonts and icons, and in proxy
 mode the SDK has no fallback to Google Fonts. A misconfigured binary route fails silently, with

@@ -246,11 +246,10 @@ if (upstreamUrl) {
       data.gtmOnFailure();
     }
   }).catch(() => {
-    // Network error / timeout reaching the upstream: return a deterministic
-    // 502 rather than leaving the request hanging.
-    setResponseStatus(502);
-    setResponseBody('Bad Gateway');
-    returnResponse();
+    // Network error / timeout reaching the upstream. Answer nothing: a 5xx
+    // counts against hosted tagging servers' SLA (SUP-1133). The Client that
+    // claimed the request returns the status it staged; the reference Client
+    // in docs/claiming-inbound-requests.md stages a 404.
     data.gtmOnFailure();
   });
 } else {
@@ -508,13 +507,13 @@ scenarios:
     assertApi('setResponseStatus').wasCalledWith(500);
     assertApi('gtmOnFailure').wasCalled();
     assertApi('gtmOnSuccess').wasNotCalled();
-- name: 'an upstream network error returns a deterministic 502'
+- name: 'an upstream network error fails the tag without answering the request'
   code: |-
     mockRequest('/api/v1/app', 'GET');
     mockUpstreamError();
     runCode({ proxyBasePath: '' });
-    assertApi('setResponseStatus').wasCalledWith(502);
-    assertApi('setResponseBody').wasCalledWith('Bad Gateway');
+    assertApi('setResponseStatus').wasNotCalled();
+    assertApi('returnResponse').wasNotCalled();
     assertApi('gtmOnFailure').wasCalled();
 - name: 'an unmatched path returns 404 and does not call upstream'
   code: |-
@@ -611,6 +610,8 @@ Forwarding is transparent: the HTTP method, the query string and the relevant
 request and response headers are preserved, and the upstream status code is
 relayed as-is. Static namespaces without an upstream Cache-Control get
 'public, max-age=3600' so browsers stop revalidating the SDK on every page view.
+If the upstream cannot be reached the tag answers nothing and fails; the
+Client's staged status is returned.
 
 Setup
 
