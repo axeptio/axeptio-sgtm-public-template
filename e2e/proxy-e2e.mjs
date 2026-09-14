@@ -21,7 +21,12 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 
 const TAGGING_URL = (process.env.TAGGING_URL || '').replace(/\/+$/, '');
-const BASE_PATH = process.env.PROXY_BASE_PATH || '';
+// Normalised like the tag and the reference Client: leading slash, no trailing
+// slash, and a bare '/' (or '////') means the domain root, i.e. ''.
+const BASE_PATH = (() => {
+  const trimmed = (process.env.PROXY_BASE_PATH || '').replace(/\/+$/, '');
+  return trimmed && !trimmed.startsWith('/') ? `/${trimmed}` : trimmed;
+})();
 
 // One sample per namespace. `env` is the override variable (kept explicit so the
 // skip hint never points at a name the harness doesn't read), `def` the default
@@ -86,7 +91,14 @@ for (const route of ROUTES) {
   });
 }
 
-test('unmatched path returns 404 from the proxy', { skip: !enabled }, async () => {
-  const res = await fetch(proxyUrl('/definitely-not-a-namespace'));
-  assert.equal(res.status, 404, 'an unmatched path should 404');
+// The proxy tag leaves an unmatched path unanswered on purpose. The 404 is the
+// status the reference Client stages before runContainer and flushes from its
+// callback with returnResponse(), so a timeout here means the Client's callback
+// does not flush. Needs a base path: mounted at the domain root, the reference
+// Client claims only the proxy namespaces and never sees an unmatched path.
+const unmatchedSkip = !enabled ? true : !BASE_PATH ? 'set PROXY_BASE_PATH: at the root the reference Client never claims an unmatched path' : false;
+
+test('unmatched path under the base path returns the Client-staged 404', { skip: unmatchedSkip }, async () => {
+  const res = await fetch(proxyUrl('/definitely-not-a-namespace'), { signal: AbortSignal.timeout(10_000) });
+  assert.equal(res.status, 404, 'the reference Client should answer an unmatched path with its staged 404');
 });

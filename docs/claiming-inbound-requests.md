@@ -76,12 +76,13 @@ What it *does*, once something has caused it to run:
 
 | Behaviour | Where |
 | --- | --- |
-| Normalises the **Proxy Base Path** (leading slash, no trailing slash, a bare `/` means root mount) and strips it only on a path boundary, so `/axeptio` never mis-strips `/axeptiofoo` | `template.tpl:152-176` |
-| Matches the remaining path against six namespaces — `/static-eu/`, `/static/`, `/client/`, `/api/v1/`, `/favicons/`, `/fonts/` — most specific first | `template.tpl:128-135` |
-| Accepts the legacy `/consents` alias, forwarding it to `https://api.axept.io/v1/app/consents` | `template.tpl:197-198` |
-| Sets the response status, body and headers from the upstream response, calls `returnResponse()`, then `data.gtmOnSuccess()` | `template.tpl:212-226` |
-| On an upstream failure, answers `502` and calls `data.gtmOnFailure()` | `template.tpl:233-236` |
-| On an unmatched path, answers `404` and calls `data.gtmOnFailure()` | `template.tpl:242-245` |
+| Normalises the **Proxy Base Path** (leading slash, no trailing slash, a bare `/` means root mount) and strips it only on a path boundary, so `/axeptio` never mis-strips `/axeptiofoo` | `template.tpl:161-185` |
+| Matches the remaining path against six namespaces — `/static-eu/`, `/static/`, `/client/`, `/api/v1/`, `/favicons/`, `/fonts/` — most specific first | `template.tpl:129-136` |
+| Accepts the legacy `/consents` alias, forwarding it to `https://api.axept.io/v1/app/consents` | `template.tpl:208-209` |
+| Sets the response status, body and headers from the upstream response, calls `returnResponse()`, then `data.gtmOnSuccess()` | `template.tpl:223-247` |
+| On `/static-eu/`, `/static/`, `/favicons/` and `/fonts/`, adds `Cache-Control: public, max-age=3600` to a `200`/`304` whose upstream sent none | `template.tpl:239-241` |
+| On an upstream failure, answers **nothing** and calls `data.gtmOnFailure()` — the status the Client staged is what the browser gets | `template.tpl:248-253` |
+| On an unmatched path, answers **nothing** and calls `data.gtmOnSuccess()` — the request belongs to whichever Client claimed it | `template.tpl:255-263` |
 
 A tag writing the response is not a hack. Google describes `returnResponse` as flushing
 what *other* templates set:
@@ -91,9 +92,11 @@ what *other* templates set:
 > setResponseHeader, and setResponseStatus.
 
 So "one template composes the response, another flushes it" is the documented shape. The
-genuinely open question is **who flushes**: our tag calls `returnResponse()` itself
-(`template.tpl:224`, `:235`, `:244`), while the same reference says "It is recommended
-that this API be used from a client template." See
+genuinely open question is **who flushes**: our tag calls `returnResponse()` itself after a
+successful proxy (`template.tpl:242`), while the same reference says "It is recommended
+that this API be used from a client template." On an upstream failure or an unmatched path
+the tag no longer flushes at all, so the Client **must** — the reference Client below stages
+a `404` and flushes from its `runContainer` callback. See
 [section 5](#5-what-is-verified-and-what-is-not).
 
 ## 3. Why the Axeptio client template is not the answer
@@ -164,10 +167,12 @@ One field, mirroring the tag's, so the two agree on where the proxy is mounted:
 
 const claimRequest = require('claimRequest');
 const getRequestPath = require('getRequestPath');
+const returnResponse = require('returnResponse');
 const runContainer = require('runContainer');
+const setResponseStatus = require('setResponseStatus');
 
 // The namespaces the Axeptio proxy tag knows how to forward. Keep this list in
-// sync with the `routes` table in the tag template (template.tpl:128-135).
+// sync with the `routes` table in the tag template (template.tpl:129-136).
 const NAMESPACES = [
   '/static-eu/',
   '/static/',
@@ -177,7 +182,7 @@ const NAMESPACES = [
   '/fonts/'
 ];
 
-// Normalise the base path exactly as the tag does (template.tpl:152-169):
+// Normalise the base path exactly as the tag does (template.tpl:161-178):
 // leading slash, no trailing slash, and a bare '/' means "root mount".
 let basePath = data.proxyBasePath || '';
 if (basePath) {
@@ -194,7 +199,7 @@ if (basePath) {
 
 const path = getRequestPath() || '/';
 
-// Boundary-safe matching, mirroring template.tpl:170-176. A base path of
+// Boundary-safe matching, mirroring template.tpl:179-185. A base path of
 // '/axeptio' must match '/axeptio' and '/axeptio/api/v1/...', but NEVER
 // '/axeptiofoo'.
 let mine = false;
@@ -211,33 +216,39 @@ if (basePath) {
     }
   }
   if (!mine && path === '/consents') {
-    mine = true; // legacy alias, template.tpl:197-198
+    mine = true; // legacy alias, template.tpl:208-209
   }
 }
 
 if (mine) {
   claimRequest();
 
+  // Stage the answer for everything the proxy tag leaves unanswered: an
+  // unmatched path under the base path, or an upstream the tag could not reach.
+  // A 4xx, not a 5xx: hosted tagging servers count 5xx against their SLA. On a
+  // successful proxy the tag overwrites this status with the upstream's.
+  setResponseStatus(404);
+
   // Dispatch one event the proxy tag's trigger can match on. The name is
   // arbitrary but must match the trigger you create (see below). Keep it
   // distinct from 'consents', which the unrelated Axeptio client template uses.
   runContainer({ event_name: 'axeptio_proxy', path: path }, () => {
-    // Deliberately EMPTY.
+    // Flush whatever is staged: the 404 above, unless the proxy tag replaced it.
     //
     // Do NOT call setPixelResponse() here: it would overwrite the upstream body
     // and content type the proxy tag staged, turning every proxied asset into a
-    // 1x1 GIF. The tag stages the response and calls returnResponse() itself
-    // (template.tpl:212-224); whether that tag-issued call is honoured is the
+    // 1x1 GIF. After a successful proxy the tag has already called
+    // returnResponse() itself (template.tpl:242), so this call matters when the
+    // tag answered nothing; whether the second flush is a harmless no-op is the
     // open question in section 5 of the doc, NOT something this snippet settles.
-    // If the response never reaches the browser, calling returnResponse() from
-    // this callback instead is the alternative to test.
+    returnResponse();
   });
 }
 ```
 
 ### `___SERVER_PERMISSIONS___`
 
-Only two permissions are needed. `claimRequest` needs none — Google lists its associated
+Four permissions are needed. `claimRequest` needs none — Google lists its associated
 permissions as "None".
 
 ```json
@@ -260,14 +271,33 @@ permissions as "None".
       "param": []
     },
     "isRequired": true
+  },
+  {
+    "instance": {
+      "key": { "publicId": "access_response", "versionId": "1" },
+      "param": [
+        { "key": "writeResponseAccess", "value": { "type": 1, "string": "any" } },
+        { "key": "writeHeaderAccess", "value": { "type": 1, "string": "any" } }
+      ]
+    },
+    "clientAnnotations": { "isEditedByUser": true },
+    "isRequired": true
+  },
+  {
+    "instance": {
+      "key": { "publicId": "return_response", "versionId": "1" },
+      "param": []
+    },
+    "isRequired": true
   }
 ]
 ```
 
 `read_request` is what `getRequestPath` requires; `run_container` is what `runContainer`
-requires. Two permissions against the tag's five (`logging`, `send_http`, `read_request`,
-`access_response`, `return_response`): this Client makes no outbound call and never
-touches the response.
+requires; `access_response` covers `setResponseStatus` and `return_response` covers
+`returnResponse`. The last two use the same shape as the tag's own blocks in
+`template.tpl`. This Client makes no outbound call; it only stages the fallback `404` and
+flushes.
 
 The three `read_request` sub-options are shown as `any` because that is the shape used by
 the published templates in this repository and its sibling — Google's permission reference
@@ -340,15 +370,17 @@ A green `npm run e2e` with the secret unset is not evidence of anything.
 
 - The reference Client in [section 4](#4-the-reference-client) is **derived from Google's
   published API reference, not from an observed deployment.** Its normalisation and
-  boundary matching are transcribed from code that *is* tested (`template.tpl:152-176`);
-  its claim and dispatch behaviour is not.
-- **Open behaviour — who flushes the response.** Our tag calls `returnResponse()` itself
-  (`template.tpl:224`, `:235`, `:244`), while Google's reference says of that API: "It is
-  recommended that this API be used from a client template." Whether a tag-issued flush
-  is honoured in a server container, or whether the Client must flush from its
-  `runContainer` callback once the tag has staged the response, **is unproven here.** This
-  document does not settle it. If your proxied responses arrive empty or never arrive,
-  that is the first thing to test: move the flush into the Client's callback and compare.
+  boundary matching are transcribed from code that *is* tested (`template.tpl:161-185`);
+  its claim, dispatch and flush behaviour is not.
+- **Open behaviour — two flushes on success.** After a successful proxy our tag calls
+  `returnResponse()` itself (`template.tpl:242`), and the reference Client calls it again
+  from its `runContainer` callback — needed because on an upstream failure or an
+  unmatched path the tag answers nothing, so the Client's flush is the only one. Google's
+  reference says of that API: "It is recommended that this API be used from a client
+  template." Whether the tag's flush is honoured, and whether the Client's second call is
+  a harmless no-op, **is unproven here.** Check both in Preview: a proxied asset must
+  arrive with the upstream's status and body, and an unreachable upstream must arrive as
+  the Client's `404`.
 - The `event_name` value `axeptio_proxy` is a suggestion, not a protocol. Nothing in
   `template.tpl` reads it; only your trigger does.
 

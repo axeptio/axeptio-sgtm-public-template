@@ -124,15 +124,24 @@ headerNames.forEach((headerName) => {
 const requestBody = getRequestBody();
 
 // proxyBaseUrl namespace -> upstream Axeptio origin. Most specific prefixes
-// first so '/static-eu/' is never shadowed by '/static/'.
+// first so '/static-eu/' is never shadowed by '/static/'. `cache` marks the
+// static namespaces whose responses browsers may keep (see below).
 const routes = [
-  { prefix: '/static-eu/', upstream: 'https://static.axeptio.eu/' },
-  { prefix: '/static/', upstream: 'https://static.axept.io/' },
+  { prefix: '/static-eu/', upstream: 'https://static.axeptio.eu/', cache: true },
+  { prefix: '/static/', upstream: 'https://static.axept.io/', cache: true },
   { prefix: '/client/', upstream: 'https://client.axept.io/' },
   { prefix: '/api/v1/', upstream: 'https://api.axept.io/v1/' },
-  { prefix: '/favicons/', upstream: 'https://favicons.axept.io/' },
-  { prefix: '/fonts/', upstream: 'https://fonts.axept.io/' }
+  { prefix: '/favicons/', upstream: 'https://favicons.axept.io/', cache: true },
+  { prefix: '/fonts/', upstream: 'https://fonts.axept.io/', cache: true }
 ];
+
+// Browser cache lifetime for the static namespaces when the upstream sends no
+// Cache-Control. static.axept.io serves sdk.js and the widget bundles without
+// one, so browsers revalidate them on nearly every page view, and hosted
+// tagging servers (Addingwell, Stape) bill every incoming request, 304s
+// included. One hour removes most in-session revalidations while SDK releases
+// still reach visitors quickly.
+const STATIC_CACHE_CONTROL = 'public, max-age=3600';
 
 // Hop-by-hop and framing headers that must not be relayed from the upstream
 // response: they describe a single connection and the GTM HTTP client computes
@@ -188,9 +197,11 @@ const method = getRequestMethod() || 'GET';
 // Resolve the upstream URL from the matched namespace, or the legacy
 // '/consents' alias for installs created before namespace routing existed.
 let upstreamUrl = null;
+let cacheable = false;
 for (let i = 0; i < routes.length; i++) {
   if (path.indexOf(routes[i].prefix) === 0) {
     upstreamUrl = routes[i].upstream + path.substring(routes[i].prefix.length) + queryString;
+    cacheable = routes[i].cache === true;
     break;
   }
 }
@@ -211,6 +222,7 @@ if (upstreamUrl) {
     // instead of being swallowed into an empty response.
     setResponseStatus(response.statusCode);
     setResponseBody(response.body);
+    let hasCacheControl = false;
     for (let key in response.headers) {
       const value = response.headers[key];
       if (value === undefined || value === null) {
@@ -219,7 +231,13 @@ if (upstreamUrl) {
       if (droppedResponseHeaders[key.toLowerCase()]) {
         continue;
       }
+      if (key.toLowerCase() === 'cache-control') {
+        hasCacheControl = true;
+      }
       setResponseHeader(key, value);
+    }
+    if (cacheable && !hasCacheControl && (response.statusCode === 200 || response.statusCode === 304)) {
+      setResponseHeader('Cache-Control', STATIC_CACHE_CONTROL);
     }
     returnResponse();
     if (response.statusCode >= 200 && response.statusCode < 400) {
@@ -228,21 +246,20 @@ if (upstreamUrl) {
       data.gtmOnFailure();
     }
   }).catch(() => {
-    // Network error / timeout reaching the upstream: return a deterministic
-    // 502 rather than leaving the request hanging.
-    setResponseStatus(502);
-    setResponseBody('Bad Gateway');
-    returnResponse();
+    // Network error / timeout reaching the upstream. Answer nothing: a 5xx
+    // counts against hosted tagging servers' SLA (SUP-1133). The Client that
+    // claimed the request returns the status it staged; the reference Client
+    // in docs/claiming-inbound-requests.md stages a 404.
     data.gtmOnFailure();
   });
 } else {
-  // No namespace matched: respond with an explicit 404 and mark the tag as
-  // failed so misroutes are diagnosable instead of looking like a successful
-  // execution in Preview/monitoring.
-  setResponseStatus(404);
-  setResponseBody('Not Found');
-  returnResponse();
-  data.gtmOnFailure();
+  // No namespace matched: leave the response untouched. The request belongs to
+  // whichever Client claimed it, and answering here would overwrite that
+  // Client's response whenever this tag sits on a broad trigger.
+  if (data.enableLogging) {
+    logToConsole('Axeptio proxy: no route for ' + method + ' ' + path + ', left to the claiming Client');
+  }
+  data.gtmOnSuccess();
 }
 
 
@@ -459,8 +476,8 @@ scenarios:
     mockRequest('/axeptiofoo/api/v1/app', 'GET');
     runCode({ proxyBasePath: '/axeptio' });
     assertApi('sendHttpRequest').wasNotCalled();
-    assertApi('setResponseStatus').wasCalledWith(404);
-    assertApi('gtmOnFailure').wasCalled();
+    assertApi('returnResponse').wasNotCalled();
+    assertApi('gtmOnSuccess').wasCalled();
 - name: 'query string is preserved on the forwarded URL'
   code: |-
     mockRequest('/api/v1/app', 'GET');
@@ -490,22 +507,66 @@ scenarios:
     assertApi('setResponseStatus').wasCalledWith(500);
     assertApi('gtmOnFailure').wasCalled();
     assertApi('gtmOnSuccess').wasNotCalled();
-- name: 'an upstream network error returns a deterministic 502'
+- name: 'an upstream network error fails the tag without answering the request'
   code: |-
     mockRequest('/api/v1/app', 'GET');
     mockUpstreamError();
     runCode({ proxyBasePath: '' });
-    assertApi('setResponseStatus').wasCalledWith(502);
-    assertApi('setResponseBody').wasCalledWith('Bad Gateway');
+    assertApi('setResponseStatus').wasNotCalled();
+    assertApi('returnResponse').wasNotCalled();
     assertApi('gtmOnFailure').wasCalled();
-- name: 'an unmatched path returns 404 and does not call upstream'
+- name: 'an unmatched path is left to the claiming Client and does not call upstream'
   code: |-
     mockRequest('/random', 'GET');
     runCode({ proxyBasePath: '' });
     assertApi('sendHttpRequest').wasNotCalled();
-    assertApi('setResponseStatus').wasCalledWith(404);
-    assertApi('setResponseBody').wasCalledWith('Not Found');
-    assertApi('gtmOnFailure').wasCalled();
+    assertApi('setResponseStatus').wasNotCalled();
+    assertApi('returnResponse').wasNotCalled();
+    assertApi('gtmOnSuccess').wasCalled();
+- name: 'a static 200 without Cache-Control gets a one hour browser cache'
+  code: |-
+    let headersSet = {};
+    mockRequest('/static/sdk.js', 'GET');
+    mockUpstream({ statusCode: 200, body: 'x', headers: { 'content-type': 'application/javascript' } });
+    mock('setResponseHeader', (key, value) => { headersSet[key] = value; });
+    runCode({ proxyBasePath: '' });
+    assertThat(headersSet['Cache-Control']).isEqualTo('public, max-age=3600');
+- name: 'a static 304 without Cache-Control gets a one hour browser cache'
+  code: |-
+    let headersSet = {};
+    mockRequest('/fonts/x.woff2', 'GET');
+    mockUpstream({ statusCode: 304, body: '', headers: {} });
+    mock('setResponseHeader', (key, value) => { headersSet[key] = value; });
+    runCode({ proxyBasePath: '' });
+    assertThat(headersSet['Cache-Control']).isEqualTo('public, max-age=3600');
+- name: 'an upstream Cache-Control on a static response is relayed unchanged'
+  code: |-
+    let headersSet = {};
+    mockRequest('/static/behavior-detection.min.js', 'GET');
+    mockUpstream({ statusCode: 200, body: 'x', headers: { 'cache-control': 'public, max-age=31536000' } });
+    mock('setResponseHeader', (key, value) => { headersSet[key] = value; });
+    runCode({ proxyBasePath: '' });
+    assertThat(headersSet['cache-control']).isEqualTo('public, max-age=31536000');
+    assertThat(headersSet['Cache-Control']).isUndefined();
+- name: 'api and client responses never get an added Cache-Control'
+  code: |-
+    let headersSet = {};
+    mock('setResponseHeader', (key, value) => { headersSet[key] = value; });
+    mockRequest('/api/v1/app/consents', 'POST');
+    mockUpstream({ statusCode: 200, body: 'OK', headers: {} });
+    runCode({ proxyBasePath: '' });
+    mockRequest('/client/config.json', 'GET');
+    mockUpstream({ statusCode: 200, body: 'x', headers: {} });
+    runCode({ proxyBasePath: '' });
+    assertThat(headersSet['Cache-Control']).isUndefined();
+- name: 'a static 404 from the upstream gets no added Cache-Control'
+  code: |-
+    let headersSet = {};
+    mockRequest('/static/missing.js', 'GET');
+    mockUpstream({ statusCode: 404, body: 'nope', headers: {} });
+    mock('setResponseHeader', (key, value) => { headersSet[key] = value; });
+    runCode({ proxyBasePath: '' });
+    assertThat(headersSet['Cache-Control']).isUndefined();
 - name: 'hop-by-hop response headers are dropped while normal headers are relayed'
   code: |-
     let headersSet = {};
@@ -543,11 +604,15 @@ Routes ('*' is the remainder of the path, forwarded as-is):
   /static-eu/*  ->  https://static.axeptio.eu/*
 
 The legacy '/consents' path is still accepted and forwarded to
-https://api.axept.io/v1/app/consents. Anything unmatched returns a 404.
+https://api.axept.io/v1/app/consents. Anything unmatched is left to the Client
+that claimed the request.
 
 Forwarding is transparent: the HTTP method, the query string and the relevant
 request and response headers are preserved, and the upstream status code is
-relayed as-is.
+relayed as-is. Static namespaces without an upstream Cache-Control get
+'public, max-age=3600' so browsers stop revalidating the SDK on every page view.
+If the upstream cannot be reached the tag answers nothing and fails; the
+Client's staged status is returned.
 
 Setup
 

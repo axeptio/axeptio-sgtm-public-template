@@ -126,11 +126,13 @@ test('hop-by-hop response headers are stripped and normal headers relayed', asyn
   }
 });
 
-// --- 6. Upstream connection error maps to a deterministic 502. -----------------
-test('upstream connection error returns 502 Bad Gateway', async () => {
+// --- 6. Upstream connection error: the tag fails without answering. ------------
+// A 5xx counts against hosted tagging servers' SLA (SUP-1133), so the response
+// is left to the Client that claimed the request.
+test('upstream connection error fails the tag without answering the request', async () => {
   const res = await run({ path: '/api/v1/network-error' });
-  assert.equal(res.status, 502);
-  assert.equal(res.body.toString(), 'Bad Gateway');
+  assert.equal(res.responded, false);
+  assert.equal(res.status, undefined);
   assert.equal(res.gtmOnFailureCalls, 1);
 });
 
@@ -153,15 +155,28 @@ for (const basePath of ['/', '']) {
 
 test('base path never mis-strips the non-boundary prefix axeptiofoo', async () => {
   const res = await run({ path: '/axeptiofoo/static/echo', data: { proxyBasePath: '/axeptio' } });
-  assert.equal(res.status, 404);
+  assert.equal(res.responded, false);
   assert.equal(mock.requests.length, 0);
 });
 
-// --- 8. Unmatched path: 404, no upstream traffic. ------------------------------
-test('unmatched path returns 404 without contacting any upstream', async () => {
+// --- 8. Unmatched path: left to the claiming Client, no upstream traffic. ------
+test('unmatched path is left to the claiming Client without contacting any upstream', async () => {
   const res = await run({ path: '/nope' });
-  assert.equal(res.status, 404);
-  assert.equal(res.body.toString(), 'Not Found');
-  assert.equal(res.gtmOnFailureCalls, 1);
+  assert.equal(res.responded, false);
+  assert.equal(res.status, undefined);
+  assert.equal(res.gtmOnSuccessCalls, 1);
   assert.equal(mock.requests.length, 0);
+});
+
+// --- 9. Static namespaces get a browser cache when the upstream sets none. -----
+test('static response without Cache-Control gets a one hour browser cache', async () => {
+  const res = await run({ path: '/static/echo' });
+  assert.equal(res.status, 200);
+  assert.equal(res.headers['cache-control'], 'public, max-age=3600');
+});
+
+test('api response never gets an added Cache-Control', async () => {
+  const res = await run({ path: '/api/v1/echo' });
+  assert.equal(res.status, 200);
+  assert.equal(res.headers['cache-control'], undefined);
 });

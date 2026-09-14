@@ -91,12 +91,26 @@ Three things have to line up:
 | `/static-eu/*` | `https://static.axeptio.eu/*` |
 
 The legacy `/consents` path is still accepted, and forwarded to
-`https://api.axept.io/v1/app/consents` for backward compatibility. Anything unmatched returns a
-`404`.
+`https://api.axept.io/v1/app/consents` for backward compatibility. Anything unmatched is left
+untouched for the Client that claimed the request to answer.
 
 Forwarding is transparent: the HTTP method, the query string and the relevant request and
 response headers are preserved, and the upstream status code is relayed as-is, so redirects,
-`304`s and errors reach the caller instead of being swallowed.
+`304`s and errors reach the caller instead of being swallowed. The exceptions are about what a
+hosted tagging server bills or counts against its SLA:
+
+- When a `200` or `304` from `/static/`, `/static-eu/`, `/fonts/` or `/favicons/` carries no
+  `Cache-Control`, the tag adds `Cache-Control: public, max-age=3600`. Other statuses are relayed
+  untouched. Without it browsers revalidate the SDK on almost every page view, and hosts such as
+  Addingwell and Stape bill each of those requests.
+- When the upstream cannot be reached, the tag answers nothing and marks itself failed. The
+  status your Client staged is returned instead of a `5xx`.
+
+**Your Client must flush the response.** On an upstream failure or an unmatched path the tag
+answers nothing, so the status your Client staged reaches the browser only if the Client's
+`runContainer` callback calls `returnResponse()`. With an empty callback — what the reference
+Client used to show — those requests wait for the sGTM timeout instead. See
+[the reference Client](./docs/claiming-inbound-requests.md#4-the-reference-client).
 
 **Caveat — binary assets.** `/fonts/*` and `/favicons/*` serve fonts and icons, and in proxy
 mode the SDK has no fallback to Google Fonts. A misconfigured binary route fails silently, with
@@ -116,7 +130,7 @@ Use the **Preview** tool in your server container:
 3. **Binary asset relay** — confirm `/fonts/*` and `/favicons/*` return byte-correct assets: web
    fonts render, the favicon loads.
 4. **Base path** — with a Proxy Base Path set, confirm requests under it (`/axeptio/api/v1/...`)
-   match, and that an unknown path returns a `404`.
+   match, and that an unknown path under it returns the `404` your Client stages.
 
 </details>
 
